@@ -1,0 +1,2464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CYB 212 — Ethical Hacking Lab · University of Uyo</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0e17;
+  --bg2:       #0d1220;
+  --bg3:       #111827;
+  --panel:     #0f1929;
+  --border:    #1e3a5f;
+  --green:     #00ff88;
+  --green2:    #00cc6a;
+  --cyan:      #00d4ff;
+  --cyan2:     #0099bb;
+  --red:       #ff4757;
+  --orange:    #ffa502;
+  --yellow:    #ffd700;
+  --purple:    #a855f7;
+  --white:     #e2e8f0;
+  --grey:      #64748b;
+  --grey2:     #1e2d3d;
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-ui:   'Rajdhani', sans-serif;
+  --font-head: 'Orbitron', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── SCANLINE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,136,0.015) 2px, rgba(0,255,136,0.015) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── HEADER ── */
+header {
+  background: linear-gradient(135deg, #0a0e17 0%, #0d1f35 100%);
+  border-bottom: 2px solid var(--green);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 0 40px rgba(0,255,136,0.15);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.logo-area { display: flex; align-items: center; gap: 14px; }
+.logo-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: #000;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+.logo-text h1 {
+  font-family: var(--font-head);
+  font-size: 14px;
+  color: var(--green);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.logo-text p { font-size: 11px; color: var(--grey); letter-spacing: 1px; }
+.header-status {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+}
+.status-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0,255,136,0.08);
+  border: 1px solid rgba(0,255,136,0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--green);
+}
+.status-dot {
+  width: 7px; height: 7px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: blink 1.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.exam-badge {
+  background: linear-gradient(135deg, rgba(255,71,87,0.2), rgba(255,71,87,0.05));
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--red);
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  animation: pulse-red 2s infinite;
+}
+@keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(255,71,87,0.4)} 50%{box-shadow:0 0 0 6px rgba(255,71,87,0)} }
+
+/* ── TAB NAV ── */
+.tab-nav {
+  display: flex;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+.tab-btn {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--grey);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  display: flex; align-items: center; gap: 7px;
+}
+.tab-btn:hover { color: var(--white); background: rgba(255,255,255,0.04); }
+.tab-btn.active { color: var(--green); border-bottom-color: var(--green); background: rgba(0,255,136,0.05); }
+.tab-icon { font-size: 15px; }
+
+/* ── MAIN LAYOUT ── */
+.main { display: none; padding: 0; }
+.main.active { display: block; }
+
+/* ── TERMINAL PAGE ── */
+.terminal-page {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  grid-template-rows: auto 1fr;
+  height: calc(100vh - 110px);
+  gap: 0;
+}
+.command-sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  grid-row: 1 / 3;
+}
+.sidebar-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: rgba(0,212,255,0.05);
+}
+.cmd-search {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.cmd-search input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.cmd-search input:focus { border-color: var(--green); }
+.cmd-search input::placeholder { color: var(--grey); }
+.cmd-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 0;
+}
+.cmd-list::-webkit-scrollbar { width: 4px; }
+.cmd-list::-webkit-scrollbar-track { background: transparent; }
+.cmd-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.cmd-category-label {
+  padding: 8px 16px 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--orange);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.cmd-item {
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-left: 3px solid transparent;
+}
+.cmd-item:hover { background: rgba(0,255,136,0.06); border-left-color: var(--green2); }
+.cmd-item.selected { background: rgba(0,255,136,0.1); border-left-color: var(--green); }
+.cmd-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--green);
+}
+.cmd-desc { font-size: 11px; color: var(--grey); flex: 1; }
+.cmd-tag {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+.tag-safe { background: rgba(0,255,136,0.15); color: var(--green); }
+.tag-root { background: rgba(255,71,87,0.15); color: var(--red); }
+.tag-net  { background: rgba(0,212,255,0.15); color: var(--cyan); }
+
+/* ── TERMINAL MAIN ── */
+.terminal-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+.terminal-topbar {
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.term-dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot-red { background: #ff5f56; }
+.dot-yellow { background: #ffbd2e; }
+.dot-green { background: #27c93f; }
+.term-title {
+  margin-left: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--grey);
+}
+.term-path {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--cyan);
+  background: rgba(0,212,255,0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.terminal-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  background: var(--bg);
+}
+.terminal-output::-webkit-scrollbar { width: 5px; }
+.terminal-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.out-line { margin: 1px 0; white-space: pre-wrap; word-break: break-all; }
+.out-prompt { color: var(--green); }
+.out-cmd { color: var(--white); }
+.out-result { color: #a8b8cc; }
+.out-error { color: var(--red); }
+.out-success { color: var(--green); }
+.out-info { color: var(--cyan); }
+.out-warn { color: var(--orange); }
+.out-header { color: var(--yellow); font-weight: bold; }
+.out-highlight { color: var(--purple); }
+.out-sep { color: var(--grey); }
+.terminal-input-row {
+  padding: 10px 16px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.prompt-label { font-family: var(--font-mono); font-size: 13px; color: var(--green); white-space: nowrap; }
+.terminal-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  caret-color: var(--green);
+}
+.term-hint {
+  padding: 6px 16px;
+  background: rgba(0,255,136,0.04);
+  border-top: 1px solid rgba(0,255,136,0.1);
+  font-size: 11px;
+  color: var(--grey);
+  font-family: var(--font-mono);
+}
+.term-hint span { color: var(--cyan); }
+
+/* ── INFO PANEL ── */
+.cmd-info-panel {
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  width: 280px;
+  overflow-y: auto;
+  position: fixed;
+  right: 0;
+  top: 110px;
+  bottom: 0;
+  padding: 16px;
+  display: none;
+}
+.cmd-info-panel.visible { display: block; }
+.info-title {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--green);
+  margin-bottom: 8px;
+}
+.info-section-title {
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 12px 0 6px;
+  font-family: var(--font-mono);
+}
+.info-body { font-size: 12px; color: var(--grey); line-height: 1.6; }
+.info-example {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--green2);
+  margin: 4px 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.info-example:hover { background: rgba(0,255,136,0.08); border-color: var(--green); }
+.info-example::before { content: '$ '; color: var(--grey); }
+.quick-run {
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: opacity 0.2s;
+}
+.quick-run:hover { opacity: 0.85; }
+
+/* ── THEORY PAGE ── */
+.theory-page { padding: 24px; max-width: 1100px; margin: 0 auto; }
+.theory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+.theory-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.theory-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,255,136,0.12); }
+.card-header {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.card-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.card-title { font-family: var(--font-head); font-size: 12px; letter-spacing: 1px; }
+.card-body { padding: 14px 18px; }
+.card-body p { font-size: 13px; color: var(--grey); line-height: 1.6; margin-bottom: 10px; }
+.card-points { list-style: none; }
+.card-points li {
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--white);
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.card-points li::before { content: '▸'; color: var(--green); flex-shrink: 0; margin-top: 1px; }
+.expand-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  padding: 8px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+.expand-btn:hover { background: rgba(0,212,255,0.06); }
+.card-expanded { display: none; padding: 0 18px 14px; }
+.card-expanded.open { display: block; }
+.card-expanded table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+.card-expanded td, .card-expanded th {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.card-expanded th { background: rgba(0,255,136,0.08); color: var(--green); font-family: var(--font-mono); }
+.card-expanded td { color: var(--grey); }
+.card-expanded td:first-child { color: var(--cyan); font-family: var(--font-mono); }
+
+/* ── PHASES PAGE ── */
+.phases-page { padding: 24px; }
+.phases-title {
+  font-family: var(--font-head);
+  font-size: 18px;
+  color: var(--green);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+.phases-sub { font-size: 13px; color: var(--grey); margin-bottom: 28px; }
+.phases-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.phase-item {
+  display: flex;
+  gap: 0;
+  position: relative;
+}
+.phase-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60px;
+  flex-shrink: 0;
+}
+.phase-circle {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  z-index: 1;
+  border: 2px solid;
+}
+.phase-connector {
+  width: 2px;
+  flex: 1;
+  min-height: 20px;
+  background: linear-gradient(to bottom, var(--border), transparent);
+}
+.phase-content {
+  flex: 1;
+  padding: 0 0 24px 16px;
+}
+.phase-name {
+  font-family: var(--font-head);
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.phase-desc { font-size: 13px; color: var(--grey); line-height: 1.6; }
+.phase-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.phase-tool {
+  background: rgba(0,255,136,0.06);
+  border: 1px solid rgba(0,255,136,0.2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--green2);
+}
+
+/* ── QUIZ PAGE ── */
+.quiz-page { padding: 24px; max-width: 800px; margin: 0 auto; }
+.quiz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.quiz-title { font-family: var(--font-head); font-size: 16px; color: var(--green); letter-spacing: 2px; }
+.quiz-score {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--cyan);
+  background: rgba(0,212,255,0.08);
+  border: 1px solid rgba(0,212,255,0.2);
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+.quiz-progress {
+  height: 4px;
+  background: var(--bg2);
+  border-radius: 2px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.quiz-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--cyan));
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.quiz-question-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.q-number { font-family: var(--font-mono); font-size: 11px; color: var(--grey); margin-bottom: 10px; letter-spacing: 2px; }
+.q-text { font-size: 16px; color: var(--white); line-height: 1.5; margin-bottom: 20px; }
+.q-options { display: flex; flex-direction: column; gap: 10px; }
+.q-option {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--white);
+  transition: all 0.2s;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.q-option:hover { border-color: var(--green2); background: rgba(0,255,136,0.06); }
+.q-option.correct { border-color: var(--green); background: rgba(0,255,136,0.12); color: var(--green); }
+.q-option.wrong   { border-color: var(--red); background: rgba(255,71,87,0.12); color: var(--red); }
+.q-option.disabled { cursor: not-allowed; pointer-events: none; }
+.opt-letter {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+.q-option.correct .opt-letter { background: var(--green); color: #000; }
+.q-option.wrong   .opt-letter { background: var(--red); color: #fff; }
+.q-explanation {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--cyan);
+  display: none;
+}
+.q-explanation.show { display: block; }
+.quiz-nav { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-quiz {
+  padding: 10px 24px;
+  border-radius: 6px;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: opacity 0.2s;
+}
+.btn-next { background: linear-gradient(135deg, var(--green), var(--cyan)); color: #000; }
+.btn-next:hover { opacity: 0.85; }
+.btn-reset { background: var(--bg2); border: 1px solid var(--border); color: var(--grey); }
+.btn-reset:hover { border-color: var(--orange); color: var(--orange); }
+.quiz-complete {
+  text-align: center;
+  padding: 48px 24px;
+  display: none;
+}
+.quiz-complete.show { display: block; }
+.qc-icon { font-size: 64px; margin-bottom: 16px; }
+.qc-score { font-family: var(--font-head); font-size: 48px; color: var(--green); }
+.qc-msg { font-size: 16px; color: var(--grey); margin: 12px 0 24px; }
+
+/* ── CHEATSHEET PAGE ── */
+.cheatsheet-page { padding: 24px; }
+.cs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.cs-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cs-card-header {
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cs-row {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  border-top: 1px solid rgba(30,58,95,0.5);
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cs-row:hover { background: rgba(0,255,136,0.05); }
+.cs-cmd { font-family: var(--font-mono); font-size: 12px; color: var(--green); min-width: 180px; }
+.cs-desc { font-size: 12px; color: var(--grey); flex: 1; }
+.cs-copy {
+  font-size: 10px;
+  color: var(--border);
+  font-family: var(--font-mono);
+  transition: color 0.15s;
+}
+.cs-row:hover .cs-copy { color: var(--cyan); }
+
+/* ── PAGE HERO ── */
+.page-hero {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.page-hero-icon {
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.page-hero-text h2 {
+  font-family: var(--font-head);
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: var(--green);
+  margin-bottom: 4px;
+}
+.page-hero-text p { font-size: 13px; color: var(--grey); }
+
+/* ── UTILITY ── */
+.tag { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-family: var(--font-mono); margin: 2px; }
+.t-green { background: rgba(0,255,136,0.15); color: var(--green); }
+.t-red { background: rgba(255,71,87,0.15); color: var(--red); }
+.t-cyan { background: rgba(0,212,255,0.15); color: var(--cyan); }
+.t-orange { background: rgba(255,165,2,0.15); color: var(--orange); }
+.t-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+
+.section-title {
+  font-family: var(--font-head);
+  font-size: 14px;
+  color: var(--green);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.section-sub { font-size: 13px; color: var(--grey); }
+
+/* ── COPY TOAST ── */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--green);
+  color: #000;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s;
+  pointer-events: none;
+  z-index: 9998;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1100px) {
+  .terminal-page { grid-template-columns: 260px 1fr; }
+}
+
+@media (max-width: 900px) {
+  .header-inner { padding: 10px 16px; }
+  .logo-text h1 { font-size: 13px; letter-spacing: 1px; }
+  .logo-text p { font-size: 10px; }
+  .tab-btn { padding: 11px 14px; }
+}
+
+@media (max-width: 768px) {
+  .header-inner { padding: 10px 12px; gap: 10px; }
+  .logo-area { width: 100%; }
+  .logo-icon { width: 38px; height: 38px; font-size: 18px; }
+  .logo-text h1 { font-size: 12px; }
+  .logo-text p { font-size: 10px; }
+
+  .header-status { width: 100%; justify-content: space-between; gap: 8px; }
+  .status-pill, .exam-badge { font-size: 10px; padding: 4px 10px; }
+
+  .tab-btn { padding: 10px 12px; font-size: 12px; }
+
+  .terminal-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: auto;
+    min-height: calc(100dvh - 104px);
+  }
+  .command-sidebar {
+    grid-row: auto;
+    height: min(40dvh, 260px);
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal-main { min-height: 52dvh; }
+  .terminal-topbar { flex-wrap: wrap; row-gap: 6px; }
+  .term-path {
+    margin-left: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .terminal-output { padding: 12px; font-size: 12px; }
+  .terminal-input-row { padding: 8px 12px; flex-wrap: wrap; align-items: flex-start; }
+  .prompt-label { font-size: 11px; line-height: 1.25; width: 100%; }
+  .terminal-input { width: 100%; min-height: 34px; }
+  .term-hint { padding: 6px 12px; font-size: 10px; line-height: 1.45; }
+
+  .page-hero { padding: 16px 16px 0; gap: 12px; }
+  .page-hero-icon { width: 42px; height: 42px; font-size: 18px; }
+  .page-hero-text h2 { font-size: 14px; letter-spacing: 1px; }
+  .page-hero-text p { font-size: 12px; }
+
+  .theory-page, .phases-page, .cheatsheet-page, .quiz-page { padding: 16px; }
+  .theory-grid, .cs-grid { grid-template-columns: 1fr; }
+
+  .phase-line { width: 44px; }
+  .phase-circle { width: 34px; height: 34px; font-size: 11px; }
+  .phase-content { padding: 0 0 20px 10px; }
+  .phase-name { letter-spacing: 1px; }
+
+  .quiz-question-card { padding: 16px; }
+  .q-text { font-size: 15px; }
+  .q-option { padding: 10px 12px; }
+  .quiz-nav { justify-content: stretch; }
+  .btn-quiz { flex: 1; padding: 10px 14px; }
+
+  .cs-row { flex-wrap: wrap; align-items: flex-start; }
+  .cs-cmd {
+    min-width: 0;
+    width: 100%;
+    font-size: 11px;
+    word-break: break-word;
+  }
+  .cs-desc { width: calc(100% - 22px); }
+  .cs-copy { margin-left: auto; }
+
+  .cmd-info-panel { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  .logo-text h1 { font-size: 11px; }
+  .logo-text p { display: none; }
+
+  .status-pill, .exam-badge { font-size: 9px; padding: 3px 8px; }
+  .tab-btn { padding: 9px 10px; font-size: 11px; }
+  .tab-icon { display: none; }
+
+  .sidebar-header { padding: 12px; font-size: 10px; }
+  .cmd-item { padding: 7px 12px; }
+
+  .section-title { font-size: 12px; letter-spacing: 2px; }
+  .phases-title { font-size: 16px; letter-spacing: 2px; }
+  .quiz-title { font-size: 14px; }
+  .quiz-score { font-size: 12px; }
+  .qc-score { font-size: 36px; }
+
+  #toast {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    text-align: center;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-icon">☠</div>
+      <div class="logo-text">
+        <h1>CYB 212 · Ethical Hacking Fundamentals</h1>
+        <p>University of Uyo · Department of Cyber Security · Interactive Lab</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-pill"><div class="status-dot"></div>SYSTEM ONLINE</div>
+      <div class="exam-badge">⚡ EXAM: NEXT FRIDAY</div>
+    </div>
+  </div>
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('terminal')" data-tab="terminal"><span class="tab-icon">⌨</span>TERMINAL SIM</button>
+    <button class="tab-btn" onclick="showTab('theory')" data-tab="theory"><span class="tab-icon">📖</span>THEORY</button>
+    <button class="tab-btn" onclick="showTab('phases')" data-tab="phases"><span class="tab-icon">🔄</span>PHASES</button>
+    <button class="tab-btn" onclick="showTab('cheatsheet')" data-tab="cheatsheet"><span class="tab-icon">📋</span>CHEAT SHEET</button>
+    <button class="tab-btn" onclick="showTab('quiz')" data-tab="quiz"><span class="tab-icon">🎯</span>EXAM QUIZ</button>
+  </nav>
+</header>
+
+<div id="toast">Copied!</div>
+
+<!-- ═══════════════════════════════════════ TERMINAL ═══════════════════════ -->
+<div id="tab-terminal" class="main active">
+  <div class="terminal-page">
+    <aside class="command-sidebar">
+      <div class="sidebar-header">// COMMAND REFERENCE</div>
+      <div class="cmd-search"><input type="text" id="cmd-search" placeholder="Search commands..." oninput="filterCmds(this.value)"></div>
+      <div class="cmd-list" id="cmd-list"></div>
+    </aside>
+    <div class="terminal-main">
+      <div class="terminal-topbar">
+        <div class="term-dot dot-red"></div>
+        <div class="term-dot dot-yellow"></div>
+        <div class="term-dot dot-green"></div>
+        <span class="term-title">root@kali: terminal</span>
+        <span class="term-path" id="term-path">~/</span>
+      </div>
+      <div class="terminal-output" id="terminal-output"></div>
+      <div class="terminal-input-row">
+        <span class="prompt-label" id="prompt-label">┌──(root㉿kali)-[~]<br>└─#</span>
+        <input class="terminal-input" id="terminal-input" type="text" placeholder="Type a command or click from the list..." autocomplete="off" spellcheck="false">
+      </div>
+      <div class="term-hint">
+        <span>Tab</span>=autocomplete · <span>↑↓</span>=history · <span>clear</span>=clear screen · <span>help</span>=command list · Click any command on the left to run it
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ THEORY ════════════════════════ -->
+<div id="tab-theory" class="main">
+  <div class="page-hero">
+    <div class="page-hero-icon" style="background:linear-gradient(135deg,rgba(0,255,136,0.2),rgba(0,212,255,0.2))">📖</div>
+    <div class="page-hero-text">
+      <h2>THEORY — ETHICAL HACKING FUNDAMENTALS</h2>
+      <p>All lecture topics from your handwritten notes · CYB 212 · University of Uyo</p>
+    </div>
+  </div>
+  <div class="theory-page">
+    <div class="theory-grid" id="theory-grid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ PHASES ════════════════════════ -->
+<div id="tab-phases" class="main">
+  <div class="page-hero">
+    <div class="page-hero-icon" style="background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(0,212,255,0.2))">🔄</div>
+    <div class="page-hero-text">
+      <h2>PHASES OF ETHICAL HACKING</h2>
+      <p>The 7-phase methodology — memorise this for your exam</p>
+    </div>
+  </div>
+  <div class="phases-page" id="phases-content"></div>
+</div>
+
+<!-- ═══════════════════════════════════════ CHEAT SHEET ══════════════════ -->
+<div id="tab-cheatsheet" class="main">
+  <div class="page-hero">
+    <div class="page-hero-icon" style="background:linear-gradient(135deg,rgba(255,165,2,0.2),rgba(255,71,87,0.2))">📋</div>
+    <div class="page-hero-text">
+      <h2>COMMAND CHEAT SHEET</h2>
+      <p>All commands from Practicals 2–12 · Click any row to copy the command</p>
+    </div>
+  </div>
+  <div class="cheatsheet-page">
+    <div class="cs-grid" id="cs-grid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ QUIZ ══════════════════════════ -->
+<div id="tab-quiz" class="main">
+  <div class="quiz-page">
+    <div class="quiz-header">
+      <div class="quiz-title">EXAM PREPARATION QUIZ</div>
+      <div class="quiz-score" id="quiz-score">Score: 0 / 0</div>
+    </div>
+    <div class="quiz-progress"><div class="quiz-progress-fill" id="quiz-progress-fill" style="width:0%"></div></div>
+    <div id="quiz-area"></div>
+    <div class="quiz-complete" id="quiz-complete">
+      <div class="qc-icon" id="qc-icon">🏆</div>
+      <div class="qc-score" id="qc-score"></div>
+      <div class="qc-msg" id="qc-msg"></div>
+      <button class="btn-quiz btn-next" onclick="restartQuiz()">RETAKE QUIZ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// TERMINAL SIMULATION ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+
+let termHistory = [];
+let histIdx = -1;
+let currentDir = '~';
+let currentUser = 'root';
+let fs = {
+  '~': { type: 'dir', children: { 'Desktop': { type:'dir', children: { 'notes.txt': {type:'file', content:'CYB 212 Notes\nEthical Hacking Fundamentals'}, 'scan.sh': {type:'file', content:'#!/bin/bash\nnmap -sS $1'} }}, 'Documents': { type:'dir', children: { 'report.pdf': {type:'file', content:'[PDF binary]'} }}, 'a.txt': {type:'file', content:'Hello, this is a test file.\nLine 2\nLine 3'}, 'b.txt': {type:'file', content:'Second file content.\nKali Linux\nEthical Hacking'} } },
+  '/etc': { type:'dir', children: { 'passwd':{type:'file', content:'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nkali:x:1000:1000:Kali,,,:/home/kali:/bin/bash'}, 'hostname':{type:'file', content:'kali'}, 'hosts':{type:'file', content:'127.0.0.1  localhost\n127.0.1.1  kali\n::1        localhost ip6-localhost'} }},
+  '/var/log': { type:'dir', children: { 'auth.log':{type:'file', content:'Mar 15 09:10:22 kali sshd[2021]: Accepted password for root from 192.168.1.5\nMar 15 10:05:01 kali sshd[2201]: Failed password for root from 10.0.0.5\nMar 15 10:05:03 kali sshd[2201]: Failed password for root from 10.0.0.5\nMar 15 10:05:05 kali sshd[2201]: Failed password for root from 10.0.0.5'} }},
+};
+
+const users = { root: { uid:0, gid:0, groups:['root','sudo'] }, kali: { uid:1000, gid:1000, groups:['kali','sudo','adm'] } };
+let createdUsers = {};
+let createdGroups = {};
+
+const COMMANDS = {
+  // ── SYSTEM ──
+  'uname': {
+    run(args) {
+      if (args.includes('-a')) return output('Linux kali 6.1.0-kali5-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.12-1kali2 (2023-03-17) x86_64 GNU/Linux', 'result');
+      if (args.includes('-r')) return output('6.1.0-kali5-amd64', 'result');
+      if (args.includes('-s')) return output('Linux', 'result');
+      return output('Linux', 'result');
+    }
+  },
+  'lsb_release': {
+    run(args) {
+      return output(`No LSB modules are available.\nDistributor ID:\tKali\nDescription:\tKali GNU/Linux Rolling\nRelease:\t2024.1\nCodename:\tkali-rolling`, 'result');
+    }
+  },
+  'whoami': { run() { return output(currentUser, 'success'); } },
+  'id': {
+    run(args) {
+      const u = args[0] || currentUser;
+      const info = users[u] || createdUsers[u];
+      if (!info) return output(`id: '${u}': no such user`, 'error');
+      const grps = info.groups.map((g,i) => `${i}(${g})`).join(',');
+      return output(`uid=${info.uid}(${u}) gid=${info.gid}(${u}) groups=${grps}`, 'result');
+    }
+  },
+  'uptime': {
+    run() {
+      const t = new Date();
+      return output(` ${t.toLocaleTimeString()} up 3 days,  4:17,  1 user,  load average: 0.12, 0.08, 0.05`, 'result');
+    }
+  },
+  'hostname': { run() { return output('kali', 'result'); } },
+  'top': { run() { return [
+    output('top - 14:32:05 up 3 days | Tasks: 187 total,  1 running, 186 sleeping', 'header'),
+    output('%Cpu(s):  3.1 us,  0.5 sy,  0.0 ni, 96.2 id | MiB Mem: 7936.0 total, 4521.2 free', 'result'),
+    output('', 'result'),
+    output('  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND', 'header'),
+    output(' 1284 root      20   0  428124  48256  32768 S   5.3   2.1   0:12.44 firefox', 'result'),
+    output('  842 root      20   0  521484  12288   8192 S   0.7   0.5   2:01.12 Xorg', 'result'),
+    output('  412 root      20   0   32768   4096   3072 S   0.3   0.1   0:00.88 systemd', 'result'),
+    output('[Interactive mode simulated — press q to exit in a real terminal]', 'warn'),
+  ]; }},
+  'df': {
+    run(args) {
+      const h = args.includes('-h');
+      return [
+        output('Filesystem      Size  Used Avail Use% Mounted on', 'header'),
+        output('/dev/sda1        50G   18G   30G  38% /', 'result'),
+        output('tmpfs           3.9G     0  3.9G   0% /dev/shm', 'result'),
+        output('/dev/sdb1       100G   45G   55G  45% /home', 'result'),
+        output('udev            3.8G     0  3.8G   0% /dev', 'result'),
+      ];
+    }
+  },
+  'free': {
+    run(args) {
+      return [
+        output('              total        used        free      shared  buff/cache   available', 'header'),
+        output('Mem:           7.7Gi       2.1Gi       3.8Gi       312Mi       1.8Gi       5.1Gi', 'result'),
+        output('Swap:          2.0Gi          0B       2.0Gi', 'result'),
+      ];
+    }
+  },
+  'who':  { run() { return output(`${currentUser}    tty1         ${new Date().toDateString()} 09:10 (:0)`, 'result'); }},
+  'w': {
+    run() {
+      return [
+        output(` ${new Date().toLocaleTimeString()} up 3 days,  4:17,  1 user,  load average: 0.12, 0.08`, 'result'),
+        output('USER     TTY      FROM             LOGIN@   IDLE JCPU   PCPU WHAT', 'header'),
+        output(`${currentUser}     tty1     :0               09:10    0.00s  0.07s  0.00s w`, 'result'),
+      ];
+    }
+  },
+  'last': {
+    run() {
+      return [
+        output('root     tty1         :0               Fri Mar 15 09:10   still logged in', 'result'),
+        output('root     tty1         :0               Thu Mar 14 22:00 - 09:10  (11:10)', 'result'),
+        output('reboot   system boot  6.1.0-kali5-amd6 Thu Mar 14 22:00', 'result'),
+        output('', 'result'),
+        output('wtmp begins Thu Mar 14 22:00:00 2024', 'result'),
+      ];
+    }
+  },
+  'man': {
+    run(args) {
+      const cmd = args[0];
+      if (!cmd) return output('What manual page do you want? Type: man <command>', 'error');
+      const manpages = {
+        nmap: 'NMAP(1)\n\nNAME\n   nmap - Network exploration tool and security scanner\n\nSYNOPSIS\n   nmap [Scan Type...] [Options] {target specification}\n\nDESCRIPTION\n   Nmap is an open source tool for network exploration and security auditing.\n\nSCAN TYPES\n   -sT  TCP Connect scan\n   -sS  SYN Stealth scan (requires root)\n   -sN  NULL scan\n   -sA  ACK scan\n   -sX  XMAS scan\n   -sP  Ping scan',
+        ls: 'LS(1)\n\nNAME\n   ls - list directory contents\n\nSYNOPSIS\n   ls [OPTION]... [FILE]...\n\nOPTIONS\n   -a  do not ignore entries starting with .\n   -l  use a long listing format\n   -h  human-readable sizes',
+        grep: 'GREP(1)\n\nNAME\n   grep - print lines matching a pattern\n\nSYNOPSIS\n   grep [OPTIONS] PATTERN [FILE...]\n\nOPTIONS\n   -i  ignore case\n   -n  print line numbers\n   -v  invert match\n   -r  recursive',
+      };
+      const page = manpages[cmd];
+      if (!page) return output(`No manual entry for ${cmd}`, 'error');
+      return output(page, 'result');
+    }
+  },
+
+  // ── APT ──
+  'apt': {
+    run(args) {
+      if (!args.length) return output('apt: command requires an operation mode', 'error');
+      const sub = args[0];
+      if (sub === 'update') {
+        return simulateProgress([
+          'Hit:1 http://http.kali.org/kali kali-rolling InRelease',
+          'Get:2 http://http.kali.org/kali kali-rolling/main amd64 Packages [19.8 MB]',
+          'Get:3 http://security.kali.org/kali-security kali-rolling-security InRelease',
+          'Fetched 19.8 MB in 12s (1,650 kB/s)',
+          'Reading package lists... Done',
+          'Building dependency tree... Done',
+          'Reading state information... Done',
+          'All packages are up to date.',
+        ]);
+      }
+      if (sub === 'upgrade') {
+        return simulateProgress([
+          'Reading package lists... Done',
+          'Building dependency tree... Done',
+          'The following packages will be upgraded:',
+          '  curl libssl3 nmap openssh-client',
+          '4 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.',
+          'Get:1 .../nmap_7.94-1_amd64.deb [5,876 kB]',
+          'Fetched 8.4 MB in 6s',
+          'Processing triggers for man-db...',
+          'Done. All packages upgraded successfully.',
+        ]);
+      }
+      if (sub === 'install' && args[1]) {
+        const pkg = args[1];
+        return simulateProgress([
+          `Reading package lists... Done`,
+          `Building dependency tree... Done`,
+          `The following NEW packages will be installed: ${pkg}`,
+          `0 upgraded, 1 newly installed, 0 to remove.`,
+          `Get:1 http://http.kali.org/kali kali-rolling/${pkg} amd64 [2,301 kB]`,
+          `Fetched 2.3 MB in 3s`,
+          `Unpacking ${pkg} ...`,
+          `Setting up ${pkg} ...`,
+          `Processing triggers for man-db ...`,
+          `✓ ${pkg} installed successfully.`,
+        ]);
+      }
+      if (sub === 'remove' && args[1]) {
+        return simulateProgress([
+          `Reading package lists... Done`,
+          `The following packages will be REMOVED: ${args[1]}`,
+          `0 upgraded, 0 newly installed, 1 to remove.`,
+          `Removing ${args[1]} ...`,
+          `✓ ${args[1]} removed. Config files preserved.`,
+        ]);
+      }
+      if (sub === 'purge' && args[1]) {
+        return simulateProgress([
+          `Removing ${args[1]} ...`,
+          `Purging configuration files for ${args[1]} ...`,
+          `✓ ${args[1]} completely purged (including config files).`,
+        ]);
+      }
+      if (sub === 'autoremove') {
+        return simulateProgress([
+          'Reading package lists... Done',
+          'Building dependency tree... Done',
+          'The following packages will be REMOVED:',
+          '  libpython3.10 python3.10-minimal',
+          '0 upgraded, 0 newly installed, 2 to remove.',
+          '✓ 2 orphaned packages removed.',
+        ]);
+      }
+      if (sub === 'search' && args[1]) {
+        return [
+          output(`Sorting... Done\nFull Text Search... Done`, 'result'),
+          output(`${args[1]}/kali-rolling 7.94-1 amd64\n  ${args[1]} - network tool`, 'result'),
+        ];
+      }
+      if (sub === 'show' && args[1]) {
+        return output(`Package: ${args[1]}\nVersion: 7.94-1\nSize: 5,876 kB\nDepends: libssl3, libpcap0.8\nDescription: Network scanning tool`, 'result');
+      }
+      if (sub === 'list' && args.includes('--installed')) {
+        return output('WARNING: apt does not have a stable CLI interface.\nnmap/kali-rolling,now 7.94-1 amd64 [installed]\nmetasploit-framework/kali-rolling,now 6.3.4 amd64 [installed]\nnikto/kali-rolling,now 2.1.6 amd64 [installed]', 'warn');
+      }
+      if (sub === 'full-upgrade') {
+        return simulateProgress([
+          'Reading package lists... Done',
+          'The following packages will be REMOVED: libssl1.1',
+          'The following NEW packages will be installed: libssl3',
+          'The following packages will be upgraded: openssl',
+          '1 upgraded, 1 newly installed, 1 to remove.',
+          '✓ Full upgrade complete.',
+        ]);
+      }
+      return output(`apt: unknown operation '${sub}'. Try: update, upgrade, install, remove, purge, autoremove, search, show, list`, 'error');
+    }
+  },
+
+  // ── NAVIGATION ──
+  'pwd': { run() { return output(currentDir === '~' ? '/root' : currentDir, 'result'); }},
+  'cd': {
+    run(args) {
+      const dest = args[0] || '~';
+      if (dest === '-') { currentDir = '~'; }
+      else if (dest === '..') {
+        if (currentDir === '~' || currentDir === '/') return [];
+        const parts = currentDir.split('/');
+        parts.pop();
+        currentDir = parts.join('/') || '/';
+      }
+      else if (dest.startsWith('/')) { currentDir = dest; }
+      else if (dest === '~' || dest === '$HOME') { currentDir = '~'; }
+      else if (dest.startsWith('~/')) { currentDir = dest; }
+      else { currentDir = (currentDir === '~' ? '~/' : currentDir + '/') + dest; }
+      document.getElementById('term-path').textContent = currentDir;
+      updatePrompt();
+      return [];
+    }
+  },
+  'ls': {
+    run(args) {
+      const showAll = args.includes('-a') || args.includes('-la') || args.includes('-lah');
+      const longFmt = args.includes('-l') || args.includes('-la') || args.includes('-lh') || args.includes('-lah');
+      const files = [
+        { n: 'Desktop', type: 'd', perm: 'rwxr-xr-x', size: '4.0K', date: 'Mar 15 09:10' },
+        { n: 'Documents', type: 'd', perm: 'rwxr-xr-x', size: '4.0K', date: 'Mar 14 18:00' },
+        { n: 'a.txt', type: '-', perm: 'rw-r--r--', size: '1.0K', date: 'Mar 15 10:05' },
+        { n: 'b.txt', type: '-', perm: 'rw-r--r--', size: '512', date: 'Mar 14 22:00' },
+      ];
+      const hidden = [
+        { n: '.bashrc', type: '-', perm: 'rw-r--r--', size: '3.5K', date: 'Jan 01 00:00' },
+        { n: '.profile', type: '-', perm: 'rw-r--r--', size: '807', date: 'Jan 01 00:00' },
+      ];
+      const all = showAll ? [...hidden, ...files] : files;
+      if (!longFmt) return output(all.map(f => f.n).join('  '), 'result');
+      const lines = longFmt ? ['total 24'] : [];
+      all.forEach(f => {
+        const c = f.type === 'd' ? '\x1b[34m' : '';
+        lines.push(`${f.type}${f.perm} 1 root root ${f.size.padStart(5)} ${f.date} ${f.n}`);
+      });
+      return output(lines.join('\n'), 'result');
+    }
+  },
+  'tree': {
+    run(args) {
+      return output('/root\n├── Desktop\n│   ├── notes.txt\n│   └── scan.sh\n├── Documents\n│   └── report.pdf\n├── a.txt\n└── b.txt\n\n2 directories, 5 files', 'result');
+    }
+  },
+  'echo': {
+    run(args) {
+      const vars = { '$HOME': '/root', '$USER': currentUser, '$PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', '$SHELL': '/bin/bash' };
+      const text = args.map(a => vars[a] || a).join(' ');
+      return output(text, 'result');
+    }
+  },
+  'pushd': { run(args) { const d = args[0] || '~'; const prev = currentDir; currentDir = d; updatePrompt(); return output(`${d} ${prev}`, 'result'); }},
+  'popd': { run() { currentDir = '~'; updatePrompt(); return output('/root', 'result'); }},
+
+  // ── FILE OPS ──
+  'touch': { run(args) { if (!args[0]) return output('touch: missing file operand', 'error'); return output(``, 'result'); }},
+  'cat': {
+    run(args) {
+      if (!args[0]) return output('cat: missing operand', 'error');
+      if (args.includes('>')) {
+        const idx = args.indexOf('>');
+        return output(`Files merged into ${args[idx+1]}`, 'success');
+      }
+      const known = { 'a.txt': 'Hello, this is a test file.\nLine 2\nLine 3', 'b.txt': 'Second file content.\nKali Linux\nEthical Hacking', '/etc/hostname': 'kali', '/etc/hosts': '127.0.0.1  localhost\n127.0.1.1  kali', '/etc/passwd': 'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nkali:x:1000:1000:Kali:/home/kali:/bin/bash' };
+      return output(known[args[0]] || `cat: ${args[0]}: No such file or directory`, known[args[0]] ? 'result' : 'error');
+    }
+  },
+  'head': { run(args) { const n = args.includes('-n') ? parseInt(args[args.indexOf('-n')+1]||'10') : 10; return output(`[Showing first ${n} lines of file]`, 'result'); }},
+  'tail': {
+    run(args) {
+      if (args.includes('-f')) {
+        const file = args[args.indexOf('-f')+1] || args[args.length-1];
+        if (file === '/var/log/auth.log') {
+          return [
+            output(`Mar 15 10:05:01 kali sshd[2201]: Failed password for root from 10.0.0.5 port 22 ssh2`, 'warn'),
+            output(`Mar 15 10:05:03 kali sshd[2201]: Failed password for root from 10.0.0.5 port 22 ssh2`, 'warn'),
+            output(`Mar 15 10:05:05 kali sshd[2201]: Failed password for root from 10.0.0.5 port 22 ssh2`, 'warn'),
+            output(`[Follow mode simulated — 3 brute force attempts detected from 10.0.0.5!]`, 'error'),
+          ];
+        }
+        return output(`[Following ${file} — Ctrl+C to stop]`, 'info');
+      }
+      const n = args.includes('-n') ? parseInt(args[args.indexOf('-n')+1]||'10') : 10;
+      return output(`[Showing last ${n} lines of file]`, 'result');
+    }
+  },
+  'grep': {
+    run(args) {
+      const flags = args.filter(a => a.startsWith('-'));
+      const patterns = args.filter(a => !a.startsWith('-'));
+      if (patterns.length < 1) return output('grep: missing pattern', 'error');
+      const [pat, file] = patterns;
+      const iFlag = flags.includes('-i');
+      const nFlag = flags.includes('-n');
+      const vFlag = flags.includes('-v');
+      const known = { '/etc/passwd': ['root:x:0:0:root:/root:/bin/bash', 'daemon:x:1:1:daemon', 'kali:x:1000:1000:'], '/var/log/auth.log': ['Accepted password for root', 'Failed password for root', 'Failed password for root'] };
+      if (!file) return output(`grep: ${pat}: No such file or directory`, 'error');
+      const lines = known[file] || [`(simulated) line matching "${pat}"`];
+      const p = iFlag ? pat.toLowerCase() : pat;
+      const matching = lines.filter(l => vFlag ? !(iFlag ? l.toLowerCase() : l).includes(p) : (iFlag ? l.toLowerCase() : l).includes(p));
+      if (!matching.length) return output('(no matches found)', 'grey');
+      return output(matching.map((l,i) => nFlag ? `${i+1}:${l}` : l).join('\n'), 'result');
+    }
+  },
+  'more': { run(args) { return output(`[Pager: ${args[0]||'file'} — Space=next page, q=quit (simulated)]`, 'info'); }},
+  'less': { run(args) { return output(`[Pager opened: ${args[0]||'file'} — Arrow keys to scroll, q to quit (simulated)]`, 'info'); }},
+  'cp': { run(args) { if (args.includes('-v')) return output(`'${args[0]}' -> '${args[1] || 'destination'}'`, 'success'); return output(``, 'result'); }},
+  'mv': { run(args) { return output(``, 'result'); }},
+  'rm': {
+    run(args) {
+      const rf = args.includes('-rf') || (args.includes('-r') && args.includes('-f'));
+      const dangerous = ['/', '/*', '/root', '/etc'];
+      const target = args.filter(a => !a.startsWith('-'))[0];
+      if (rf && dangerous.includes(target)) return output(`rm: dangerous operation aborted. Never run rm -rf on system directories!`, 'error');
+      return output(``, 'result');
+    }
+  },
+  'mkdir': { run(args) { if (args.includes('-p')) return output(``, 'result'); return output(``, 'result'); }},
+  'stat': { run(args) { const f = args[0]||'file'; return output(`  File: ${f}\n  Size: 1024\t\tBlocks: 8\t IO Block: 4096  regular file\nDevice: 801h/2049d\tInode: 917573    Links: 1\nAccess: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)\nAccess: 2024-03-15 09:10:44\nModify: 2024-03-14 18:22:01\nChange: 2024-03-14 18:22:01`, 'result'); }},
+  'file': { run(args) { const map = { 'a.txt':'ASCII text', 'scan.sh':'Bourne-Again shell script, ASCII text executable', '/bin/ls':'ELF 64-bit LSB pie executable, x86-64, dynamically linked' }; return output(`${args[0]||'file'}: ${map[args[0]]||'ASCII text'}`, 'result'); }},
+  'chmod': {
+    run(args) {
+      const perm = args[0]; const file = args[1];
+      if (!perm || !file) return output('chmod: missing operand', 'error');
+      return output(`Permissions of ${file} changed to ${perm}`, 'success');
+    }
+  },
+  'rename': { run(args) { return output(`Files renamed with pattern: ${args[0]||'s/old/new/'}`, 'success'); }},
+
+  // ── FIND / LOCATE ──
+  'find': {
+    run(args) {
+      if (!args.length) return output('find: missing starting point', 'error');
+      const path = args[0]; const name = args.includes('-name') ? args[args.indexOf('-name')+1] : null;
+      const type = args.includes('-type') ? args[args.indexOf('-type')+1] : null;
+      const mtime = args.includes('-mtime') ? args[args.indexOf('-mtime')+1] : null;
+      const results = {
+        '/etc': ['/etc/passwd', '/etc/hosts', '/etc/hostname', '/etc/shadow'],
+        '~': ['/root/a.txt', '/root/b.txt', '/root/Desktop/notes.txt'],
+        '/var/log': ['/var/log/auth.log', '/var/log/syslog', '/var/log/dpkg.log'],
+        '/': ['/etc/passwd', '/usr/bin/nmap', '/home/kali/.bashrc'],
+      };
+      let res = results[path] || [`${path}: No such file or directory`];
+      if (name) { const pat = name.replace('*',''); res = res.filter(r => r.includes(pat.replace(/"/g,'').replace(/'/g,''))); }
+      if (type === 'd') res = res.filter(r => !r.includes('.'));
+      if (mtime) res = res.slice(0, 3);
+      if (args.includes('>')) { return output(`Results saved to ${args[args.indexOf('>')+1]}`, 'success'); }
+      return output(res.join('\n') || '(no results)', 'result');
+    }
+  },
+  'locate': { run(args) { const q = args.filter(a=>!a.startsWith('-')).join(''); const res = { 'nginx.conf':'/etc/nginx/nginx.conf\n/usr/share/doc/nginx/nginx.conf', 'passwd':'/etc/passwd\n/etc/pam.d/passwd', 'script.sh':'/root/Desktop/scan.sh\n/usr/share/metasploit-framework/scripts/script.sh' }; return output(res[q.replace(/-i/g,'').trim()] || `/usr/share/${q}`, 'result'); }},
+  'which': { run(args) { const locs = { nmap:'/usr/bin/nmap', python3:'/usr/bin/python3', python:'/usr/bin/python3', bash:'/bin/bash', ls:'/bin/ls', grep:'/bin/grep', nikto:'/usr/bin/nikto', sqlmap:'/usr/bin/sqlmap', msfconsole:'/usr/bin/msfconsole' }; return output(locs[args[0]] || `${args[0]} not found`, locs[args[0]] ? 'result' : 'error'); }},
+  'updatedb': { run() { return simulateProgress(['Updating locate database...', 'Scanning filesystem...', 'Database updated: /var/lib/mlocate/mlocate.db', '✓ updatedb complete']); }},
+
+  // ── NETWORKING ──
+  'ip': {
+    run(args) {
+      if (args[0] === 'a' || args.join(' ').includes('addr show')) {
+        return output(`1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536\n    inet 127.0.0.1/8 scope host lo\n    inet6 ::1/128 scope host\n\n2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500\n    link/ether 08:00:27:ab:cd:ef brd ff:ff:ff:ff:ff:ff\n    inet 192.168.1.105/24 brd 192.168.1.255 scope global eth0\n    inet6 fe80::a00:27ff:feab:cdef/64 scope link\n\n3: wlan0: <NO-CARRIER,BROADCAST,MULTICAST> mtu 1500\n    link/ether 00:1c:42:12:34:56 brd ff:ff:ff:ff:ff:ff`, 'result');
+      }
+      if (args.join(' ').includes('link set')) {
+        const iface = args[3]; const state = args[4];
+        return output(`Interface ${iface} set to ${state}`, 'success');
+      }
+      return output('ip: object not specified', 'error');
+    }
+  },
+  'ifconfig': {
+    run(args) {
+      const iface = args[0];
+      if (!iface || iface === 'eth0') {
+        return output(`eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\n        inet 192.168.1.105  netmask 255.255.255.0  broadcast 192.168.1.255\n        inet6 fe80::a00:27ff:feab:cdef  prefixlen 64  scopeid 0x20<link>\n        ether 08:00:27:ab:cd:ef  txqueuelen 1000  (Ethernet)\n        RX packets 48291  bytes 62481023 (59.6 MiB)\n        TX packets 12048  bytes 1938472 (1.8 MiB)`, 'result');
+      }
+      return output(`${iface}: error fetching interface information: Device not found`, 'error');
+    }
+  },
+  'ping': {
+    run(args) {
+      const cFlag = args.includes('-c');
+      const count = cFlag ? parseInt(args[args.indexOf('-c')+1]||'4') : 4;
+      const host = args.filter(a=>!a.startsWith('-') && !/^\d+$/.test(a))[0] || 'google.com';
+      const ip = '142.250.80.46';
+      const lines = [`PING ${host} (${ip}): 56 data bytes`];
+      for (let i=0; i<count; i++) {
+        const ms = (13 + Math.random()*2).toFixed(1);
+        lines.push(`64 bytes from ${ip}: icmp_seq=${i} ttl=118 time=${ms} ms`);
+      }
+      lines.push(`--- ${host} ping statistics ---`);
+      lines.push(`${count} packets transmitted, ${count} received, 0% packet loss`);
+      lines.push(`rtt min/avg/max = 13.8/14.0/14.2 ms`);
+      if (!cFlag) lines.push(`[Continuous ping simulated — use -c N to limit packets]`);
+      return output(lines.join('\n'), 'result');
+    }
+  },
+  'traceroute': {
+    run(args) {
+      const host = args[0] || 'google.com';
+      return output(`traceroute to ${host} (142.250.80.46), 30 hops max, 60 byte packets\n 1  192.168.1.1 (192.168.1.1)  1.215 ms  1.122 ms  1.032 ms   ← Home Router\n 2  10.0.0.1 (10.0.0.1)  8.432 ms  8.221 ms  8.108 ms       ← ISP Gateway\n 3  * * *                                                     ← Router blocking ICMP\n 4  209.85.142.1 (209.85.142.1)  14.100 ms  13.988 ms        ← Google Network\n 5  142.250.80.46 (${host})  14.201 ms  14.080 ms 13.944 ms  ← Destination`, 'result');
+    }
+  },
+  'ss': {
+    run(args) {
+      if (args.includes('-s')) return output(`Total: 234\nTCP:   12 (estab 3, closed 2, orphaned 0, timewait 2)\nTransport Total     IP        IPv6\n*\t  4         -         -\nRAW\t  0         0         0\nUDP\t  7         5         2\nTCP\t  10        8         2`, 'result');
+      return output(`Netid  State    Recv-Q  Send-Q  Local Address:Port    Peer Address:Port\ntcp    LISTEN   0       128     0.0.0.0:22           0.0.0.0:*        users:(("sshd",pid=842))\ntcp    LISTEN   0       511     0.0.0.0:80           0.0.0.0:*        users:(("apache2",pid=1204))\ntcp    LISTEN   0       128     0.0.0.0:443          0.0.0.0:*        users:(("apache2",pid=1204))\nudp    UNCONN   0       0       0.0.0.0:68           0.0.0.0:*        users:(("dhclient",pid=312))`, 'result');
+    }
+  },
+  'dig': {
+    run(args) {
+      const host = args[0] || 'google.com';
+      return output(`; <<>> DiG 9.18.1-1 <<>> ${host}\n;; QUESTION SECTION:\n;${host}.\t\t\tIN\tA\n\n;; ANSWER SECTION:\n${host}.\t\t300\tIN\tA\t142.250.80.46\n\n;; Query time: 18 msec\n;; SERVER: 8.8.8.8#53(8.8.8.8)\n;; WHEN: Fri Mar 15 14:32:05 UTC 2024`, 'result');
+    }
+  },
+  'wget': {
+    run(args) {
+      const url = args.filter(a=>!a.startsWith('-'))[0] || 'https://example.com/file.zip';
+      const fname = url.split('/').pop() || 'index.html';
+      return simulateProgress([
+        `--2024-03-15 14:32:05--  ${url}`,
+        `Resolving ${url.split('/')[2]}... 93.184.216.34`,
+        `Connecting to ${url.split('/')[2]}... connected.`,
+        `HTTP request sent, awaiting response... 200 OK`,
+        `Length: 12451840 (11.9M) [application/zip]`,
+        `Saving to: '${fname}'`,
+        ``,
+        `${fname}    100%[========================>]  11.9M   5.20MB/s   in 2.3s`,
+        ``,
+        `2024-03-15 14:32:07 (5.20 MB/s) - '${fname}' saved [12451840/12451840]`,
+      ]);
+    }
+  },
+  'curl': {
+    run(args) {
+      const headOnly = args.includes('-I') || args.includes('-i');
+      const url = args.filter(a=>!a.startsWith('-'))[0] || 'http://example.com';
+      if (headOnly) return output(`HTTP/2 200\ncontent-type: text/html; charset=UTF-8\nserver: gws\nx-xss-protection: 0\nx-content-type-options: nosniff\ncache-control: private, max-age=0\ndate: Fri, 15 Mar 2024 14:32:05 GMT\ncontent-length: 1562`, 'result');
+      return output(`<!DOCTYPE html>\n<html>\n<head><title>Example Domain</title></head>\n<body><h1>Example Domain</h1><p>This domain is for use in examples.</p></body>\n</html>`, 'result');
+    }
+  },
+  'nmcli': {
+    run(args) {
+      if (args.includes('dev') && args.includes('status')) return output(`DEVICE  TYPE      STATE        CONNECTION\neth0    ethernet  connected    Wired\nwlan0   wifi      disconnected  --\nlo      loopback  unmanaged    --`, 'result');
+      if (args.includes('con') && args.includes('show')) return output(`NAME          UUID                                  TYPE      DEVICE\nWired         abc123de-f456-789a-bcde-f0123456789a  ethernet  eth0\nHomeWiFi      def456ab-c789-012d-ef34-567890abcdef  wifi      --`, 'result');
+      return output('nmcli: specify object (dev, con, radio, general)', 'error');
+    }
+  },
+
+  // ── USER MANAGEMENT ──
+  'adduser': {
+    run(args, sudo) {
+      if (!sudo) return output('adduser: permission denied. Use: sudo adduser <username>', 'error');
+      const user = args[0];
+      if (!user) return output('adduser: missing username', 'error');
+      const uid = 1001 + Object.keys(createdUsers).length;
+      createdUsers[user] = { uid, gid: uid, groups: [user] };
+      return simulateProgress([
+        `Adding user '${user}' ...`, `Adding new group '${user}' (${uid}) ...`,
+        `Adding new user '${user}' (${uid}) with group '${user}' ...`,
+        `Creating home directory '/home/${user}' ...`, `Copying files from '/etc/skel' ...`,
+        `New password: [password entered]`, `Retype new password: [password confirmed]`,
+        `passwd: password updated successfully`,
+        `Changing the user information for ${user}`,
+        `Full Name []: [entered]`, `✓ User '${user}' created successfully.`,
+      ]);
+    }
+  },
+  'useradd': {
+    run(args, sudo) {
+      if (!sudo) return output('useradd: permission denied. Use: sudo useradd ...', 'error');
+      const hasM = args.includes('-m');
+      const sIdx = args.indexOf('-s');
+      const shell = sIdx >= 0 ? args[sIdx+1] : '/bin/sh';
+      const user = args.filter(a=>!a.startsWith('-') && a !== shell)[0];
+      if (!user) return output('useradd: missing username', 'error');
+      const uid = 1001 + Object.keys(createdUsers).length;
+      createdUsers[user] = { uid, gid: uid, groups: [user] };
+      return output(`User '${user}' created (uid=${uid}, shell=${shell}, home=${hasM?'/home/'+user:'none'})`, 'success');
+    }
+  },
+  'passwd': {
+    run(args, sudo) {
+      const user = args[0] || currentUser;
+      if (user !== currentUser && !sudo) return output('passwd: You may not view or modify password information for this user.', 'error');
+      return simulateProgress([`New password: [entered]`, `Retype new password: [confirmed]`, `passwd: password updated successfully`]);
+    }
+  },
+  'deluser': {
+    run(args, sudo) {
+      if (!sudo) return output('deluser: permission denied. Use: sudo deluser <user>', 'error');
+      const user = args.filter(a=>!a.startsWith('-'))[0];
+      const remove = args.includes('-r') || args.includes('--remove-home');
+      delete createdUsers[user];
+      return output(`Removing user '${user}' ...\n${remove ? "Removing home directory '/home/"+user+"' ..." : "Home directory preserved."}\ndone.`, 'success');
+    }
+  },
+  'userdel': {
+    run(args, sudo) {
+      if (!sudo) return output('userdel: permission denied.', 'error');
+      const r = args.includes('-r');
+      const user = args.filter(a=>!a.startsWith('-'))[0];
+      delete createdUsers[user];
+      return output(`userdel: user '${user}' removed\n${r ? "userdel: '/home/"+user+"' removed" : ""}`, 'success');
+    }
+  },
+  'groupadd': {
+    run(args, sudo) {
+      if (!sudo) return output('groupadd: permission denied.', 'error');
+      const group = args.filter(a=>!a.startsWith('-'))[0];
+      const gid = 1100 + Object.keys(createdGroups).length;
+      createdGroups[group] = gid;
+      return output(`Group '${group}' created (gid=${gid})`, 'success');
+    }
+  },
+  'usermod': {
+    run(args, sudo) {
+      if (!sudo) return output('usermod: permission denied.', 'error');
+      const user = args[args.length-1];
+      if (args.includes('-G')) { const grps = args[args.indexOf('-G')+1]; return output(`User '${user}' added to groups: ${grps}`, 'success'); }
+      if (args.includes('-L')) return output(`Account '${user}' locked (! prefix added to password hash)`, 'success');
+      if (args.includes('-U')) return output(`Account '${user}' unlocked`, 'success');
+      if (args.includes('-s')) { const sh = args[args.indexOf('-s')+1]; return output(`Shell for '${user}' changed to ${sh}`, 'success'); }
+      return output(`User '${user}' modified`, 'success');
+    }
+  },
+  'su': { run(args) { const u = args.filter(a=>a!=='-')[0]||'root'; return output(`[Switched to user: ${u}]\n[Type 'exit' to return]`, 'success'); }},
+  'getent': { run(args) { if (args[0]==='group') return output('root:x:0:\ndaemon:x:1:\nkali:x:1000:\nsudo:x:27:\nadm:x:4:\n' + Object.entries(createdGroups).map(([n,id])=>`${n}:x:${id}:`).join('\n'), 'result'); return output('', 'result'); }},
+  'cut': { run(args) { return output('root\ndaemon\nkali\nsudo\nadm\nplugged\n' + Object.keys(createdGroups).join('\n'), 'result'); }},
+
+  // ── NMAP ──
+  'nmap': {
+    run(args, sudo) {
+      const target = args.filter(a=>!a.startsWith('-'))[0] || '<target>';
+      const hasS = (f) => args.includes(f);
+      const needsSudo = hasS('-sS') || hasS('-sN') || hasS('-sA') || hasS('-sX') || hasS('-sO') || hasS('-sP') || hasS('-sU');
+      if (needsSudo && !sudo) return output(`You requested a scan type that requires raw socket privileges.\nUse: sudo nmap ${args.join(' ')}`, 'error');
+
+      const ports = [
+        {port:22, state:'open', service:'ssh', version:'OpenSSH 7.4'},
+        {port:80, state:'open', service:'http', version:'Apache httpd 2.4.49'},
+        {port:443, state:'open', service:'https', version:'Apache httpd 2.4.49'},
+        {port:3306, state:'closed', service:'mysql', version:''},
+        {port:8080, state:'filtered', service:'http-proxy', version:''},
+      ];
+
+      const lines = [`Starting Nmap 7.94 ( https://nmap.org ) at ${new Date().toUTCString()}`, `Nmap scan report for ${target} (192.168.1.5)`, `Host is up (0.00080s latency).`, ``];
+
+      if (hasS('-sP')) {
+        return simulateProgress([
+          `Starting Nmap 7.94 ping scan...`,
+          `Host: 192.168.1.1   Status: Up (router)`,
+          `Host: 192.168.1.5   Status: Up (target)`,
+          `Host: 192.168.1.105 Status: Up (this machine)`,
+          `Nmap done: 256 IP addresses scanned, 3 hosts up`,
+        ]);
+      }
+      if (hasS('-sO')) {
+        lines.push('PROTOCOL  STATE  NAME');
+        lines.push('1         open   icmp');
+        lines.push('6         open   tcp');
+        lines.push('17        open   udp');
+        lines.push('50        closed esp');
+        lines.push(`\nNmap done: 1 IP address (1 host up) scanned`);
+        return output(lines.join('\n'), 'result');
+      }
+      if (hasS('-sV')) {
+        lines.push('PORT     STATE    SERVICE  VERSION');
+        ports.forEach(p => lines.push(`${String(p.port+'/tcp').padEnd(8)} ${p.state.padEnd(8)} ${p.service.padEnd(8)} ${p.version}`));
+        if (args.includes('--script') && args[args.indexOf('--script')+1]?.includes('vulners')) {
+          lines.push('');
+          lines.push('| vulners:');
+          lines.push('|   Port 80 - Apache httpd 2.4.49:');
+          lines.push('|     CVE-2021-41773  7.5  Path Traversal and RCE - CRITICAL!');
+          lines.push('|     CVE-2021-42013  9.8  Remote Code Execution - CRITICAL!');
+          lines.push('|   Port 22 - OpenSSH 7.4:');
+          lines.push('|     CVE-2018-15473  5.0  Username Enumeration');
+        }
+        lines.push(`\nNmap done: 1 IP address (1 host up) scanned`);
+        return output(lines.join('\n'), 'result');
+      }
+      if (args.includes('--script') && args[args.indexOf('--script')+1]?.includes('vuln')) {
+        lines.push('PORT   STATE SERVICE');
+        lines.push('80/tcp open  http');
+        lines.push('|_http-vuln-cve2017-5638: VULNERABLE!');
+        lines.push('|   Apache Struts Remote Code Execution (CVE-2017-5638)');
+        lines.push('|   Risk factor: High  CVSSv2: 10.0 (HIGH)');
+        lines.push('|   References: https://cve.mitre.org/...');
+        lines.push('443/tcp open https');
+        if (args[args.indexOf('--script')+1]?.includes('ssl-heartbleed')) {
+          lines.push('| ssl-heartbleed: VULNERABLE: Heartbleed (CVE-2014-0160)');
+          lines.push('|   Risk factor: High');
+        }
+        lines.push(`\nNmap done: 1 IP address scanned`);
+        return output(lines.join('\n'), 'result');
+      }
+
+      const scanType = hasS('-sS') ? 'SYN Stealth' : hasS('-sN') ? 'NULL' : hasS('-sA') ? 'ACK' : hasS('-sX') ? 'XMAS' : 'TCP Connect';
+      if (hasS('-sA')) {
+        lines.push('PORT     STATE       SERVICE');
+        lines.push('22/tcp   unfiltered  ssh');
+        lines.push('80/tcp   unfiltered  http');
+        lines.push('8080/tcp filtered    http-proxy');
+        lines.push('');
+        lines.push(`Nmap done: 1 IP address scanned (ACK scan — maps firewall rules, not open ports)`);
+        return output(lines.join('\n'), 'result');
+      }
+      const stateWord = (hasS('-sN') || hasS('-sX')) ? 'open|filtered' : 'open';
+      lines.push(`Not shown: 997 closed ports`);
+      lines.push('PORT     STATE         SERVICE');
+      ports.filter(p=>p.state!=='closed').forEach(p => lines.push(`${String(p.port+'/tcp').padEnd(8)} ${(p.state==='open'?stateWord:p.state).padEnd(14)} ${p.service}`));
+      lines.push('');
+      lines.push(`Nmap done: 1 IP address (1 host up) scanned in 2.34s`);
+      lines.push(`[Scan type: ${scanType}]`);
+      return output(lines.join('\n'), 'result');
+    }
+  },
+
+  // ── VULN TOOLS ──
+  'nikto': {
+    run(args) {
+      const h = args.includes('-h') ? args[args.indexOf('-h')+1] : args[0] || 'target';
+      return simulateProgress([
+        `- Nikto v2.1.6`,
+        `---------------------------------------------------------------------------`,
+        `+ Target IP:          192.168.1.5`,
+        `+ Target Hostname:    ${h}`,
+        `+ Target Port:        80`,
+        `+ Server: Apache/2.4.49`,
+        `---------------------------------------------------------------------------`,
+        `+ /icons/README: Apache default file found.`,
+        `+ /phpmyadmin/: phpMyAdmin is accessible without authentication!`,
+        `+ OSVDB-877: HTTP TRACE method is active, suggesting the host is vulnerable to XST`,
+        `+ /server-status: Apache server-status is accessible.`,
+        `+ X-Frame-Options header is not included — clickjacking possible`,
+        `+ 6448 requests: 0 error(s) and 5 item(s) reported on remote host`,
+      ]);
+    }
+  },
+  'sqlmap': {
+    run(args) {
+      const u = args.includes('-u') ? args[args.indexOf('-u')+1] : 'http://target/page.php?id=1';
+      return simulateProgress([
+        `[*] starting @ 12:34:56`,
+        `[INFO] testing connection to the target URL`,
+        `[INFO] testing if the target URL content is stable`,
+        `[INFO] GET parameter 'id' appears to be 'AND boolean-based blind' injectable`,
+        `[INFO] heuristic (basic) test shows that GET parameter 'id' might be injectable`,
+        `[INFO] testing for SQL injection on GET parameter 'id'`,
+        `[INFO] GET parameter 'id' is 'AND boolean-based blind - WHERE or HAVING clause' injectable`,
+        `[INFO] the back-end DBMS is MySQL`,
+        `[INFO] fetching database names`,
+        `[INFO] available databases [3]:`,
+        `[*] information_schema`,
+        `[*] mysql`,
+        `[*] webapp_db`,
+        `[INFO] fetching tables for database: 'webapp_db'`,
+        `[INFO] tables: ['users', 'orders', 'products']`,
+        `[WARNING] table 'users' has 247 entries — credentials may be at risk!`,
+      ]);
+    }
+  },
+  'searchsploit': {
+    run(args) {
+      const q = args.join(' ');
+      return [
+        output('Exploit Database  -  https://www.exploit-db.com/', 'cyan'),
+        output('------------------------------------------------------------------------', 'sep'),
+        output(' Exploit Title                              |  Path', 'header'),
+        output('------------------------------------------------------------------------', 'sep'),
+        output(` Apache 2.4.49 - Path Traversal & RCE      |  linux/webapps/50383.sh`, 'result'),
+        output(` Apache 2.4.50 - Remote Code Execution      |  linux/webapps/50512.py`, 'result'),
+        output(` Apache mod_cgi < 2.4.18 - Remote Exploit   |  linux/remote/40969.py`, 'result'),
+        output(` Apache 2.2.x - Local Privilege Escalation  |  linux/local/28471.sh`, 'result'),
+        output('------------------------------------------------------------------------', 'sep'),
+        output(`4 exploits found for query: "${q}"`, 'success'),
+        output(`Path: /usr/share/exploitdb/exploits/`, 'grey'),
+      ];
+    }
+  },
+  'msfconsole': {
+    run(args) {
+      return simulateProgress([
+        ``,
+        `       =[ metasploit v6.3.4-dev                          ]`,
+        `+ -- --=[ 2294 exploits - 1201 auxiliary - 413 post       ]`,
+        `+ -- --=[ 965 payloads - 45 encoders - 11 nops            ]`,
+        `+ -- --=[ 9 evasion                                        ]`,
+        ``,
+        `Metasploit tip: Use 'show -h' to get help for any module`,
+        ``,
+        `msf6 > `,
+        `[Type: search <keyword>, use <module>, show options, set RHOSTS <ip>, run]`,
+        `[Example: search eternalblue → use exploit/windows/smb/ms17_010_eternalblue]`,
+      ]);
+    }
+  },
+
+  // ── MISC ──
+  'sudo': {
+    run(args) {
+      const sub = args[0];
+      if (!sub) return output('sudo: no command specified', 'error');
+      if (sub === 'apt') return COMMANDS['apt'].run(args.slice(1), true);
+      if (sub === 'adduser') return COMMANDS['adduser'].run(args.slice(1), true);
+      if (sub === 'useradd') return COMMANDS['useradd'].run(args.slice(1), true);
+      if (sub === 'userdel') return COMMANDS['userdel'].run(args.slice(1), true);
+      if (sub === 'deluser') return COMMANDS['deluser'].run(args.slice(1), true);
+      if (sub === 'passwd') return COMMANDS['passwd'].run(args.slice(1), true);
+      if (sub === 'groupadd') return COMMANDS['groupadd'].run(args.slice(1), true);
+      if (sub === 'usermod') return COMMANDS['usermod'].run(args.slice(1), true);
+      if (sub === 'nmap') return COMMANDS['nmap'].run(args.slice(1), true);
+      if (sub === 'find') return COMMANDS['find'].run(args.slice(1), true);
+      if (sub === 'du') { const p = args[args.length-1]; return output(p.includes('Desktop') ? `856M\t${p}` : `4.2G\t/root`, 'result'); }
+      if (sub === 'cat') return COMMANDS['cat'].run(args.slice(1));
+      if (sub === 'updatedb') return COMMANDS['updatedb'].run([]);
+      if (COMMANDS[sub]) return COMMANDS[sub].run(args.slice(1), true);
+      return output(`sudo: ${sub}: command not found`, 'error');
+    }
+  },
+  'clear': { run() { document.getElementById('terminal-output').innerHTML = ''; return null; }},
+  'history': { run() { return output(termHistory.slice(-15).map((h,i)=>`  ${String(i+1).padStart(3)}  ${h}`).join('\n'), 'result'); }},
+  'exit': { run() { return output('[Session ended. Open a new terminal to continue.]', 'info'); }},
+  'help': {
+    run() {
+      return output([
+        '┌─────────────────────────────────────────────────────────┐',
+        '│         CYB 212 KALI TERMINAL SIMULATOR — HELP          │',
+        '├─────────────────────────────────────────────────────────┤',
+        '│ SYSTEM:   uname, lsb_release, whoami, id, uptime,       │',
+        '│           hostname, top, df, free, who, w, last, man    │',
+        '│ APT:      sudo apt update/upgrade/install/remove/purge   │',
+        '│           sudo apt autoremove, apt search, apt show      │',
+        '│ FILES:    pwd, cd, ls, cat, head, tail, grep, touch,    │',
+        '│           cp, mv, rm, mkdir, stat, file, chmod, tree    │',
+        '│ FIND:     find, locate, updatedb, which                  │',
+        '│ NETWORK:  ip a, ifconfig, ping, traceroute, ss, dig,    │',
+        '│           wget, curl, nmcli                              │',
+        '│ USERS:    sudo adduser, useradd, passwd, deluser,        │',
+        '│           userdel, groupadd, usermod, su, getent         │',
+        '│ NMAP:     nmap -sT/-sS/-sN/-sA/-sP/-sO/-sX/-sV          │',
+        '│ VULNS:    nikto, sqlmap, searchsploit, msfconsole        │',
+        '│ OTHER:    clear, history, help, echo, exit               │',
+        '└─────────────────────────────────────────────────────────┘',
+      ].join('\n'), 'info');
+    }
+  },
+};
+
+// ── Terminal helpers ──
+function output(text, type='result') {
+  if (Array.isArray(text)) return text;
+  return { text, type };
+}
+function updatePrompt() {
+  document.getElementById('prompt-label').innerHTML = `┌──(${currentUser}㉿kali)-[${currentDir}]<br>└─#`;
+}
+function simulateProgress(lines) {
+  const el = document.getElementById('terminal-output');
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i >= lines.length) { clearInterval(interval); scrollTerm(); return; }
+    const p = document.createElement('div');
+    p.className = 'out-line out-result';
+    p.textContent = lines[i];
+    if (lines[i].includes('✓') || lines[i].includes('Done')) p.className = 'out-line out-success';
+    if (lines[i].includes('WARNING') || lines[i].includes('REMOVED')) p.className = 'out-line out-warn';
+    if (lines[i].includes('error') || lines[i].includes('CRITICAL')) p.className = 'out-line out-error';
+    el.appendChild(p);
+    scrollTerm(); i++;
+  }, 80);
+  return null;
+}
+function scrollTerm() {
+  const el = document.getElementById('terminal-output');
+  el.scrollTop = el.scrollHeight;
+}
+
+function runCommand(cmdStr) {
+  cmdStr = cmdStr.trim();
+  if (!cmdStr) return;
+  termHistory.push(cmdStr);
+  histIdx = termHistory.length;
+
+  const el = document.getElementById('terminal-output');
+
+  // Print prompt + command
+  const promptLine = document.createElement('div');
+  promptLine.className = 'out-line';
+  promptLine.innerHTML = `<span class="out-prompt">┌──(${currentUser}㉿kali)-[${currentDir}]\n└─# </span><span class="out-cmd">${escHtml(cmdStr)}</span>`;
+  el.appendChild(promptLine);
+
+  const parts = cmdStr.split(/\s+/);
+  const cmd = parts[0].toLowerCase();
+  const args = parts.slice(1);
+
+  // Handle pipe | grep
+  const pipeIdx = parts.indexOf('|');
+  const mainArgs = pipeIdx >= 0 ? parts.slice(1, pipeIdx) : args;
+  const pipeArgs = pipeIdx >= 0 ? parts.slice(pipeIdx+2) : [];
+
+  const handler = COMMANDS[cmd];
+  if (!handler) {
+    const notFound = document.createElement('div');
+    notFound.className = 'out-line out-error';
+    notFound.textContent = `${cmd}: command not found. Type 'help' for available commands.`;
+    el.appendChild(notFound);
+    scrollTerm(); return;
+  }
+
+  let results = handler.run(mainArgs);
+  if (!results) { scrollTerm(); return; }
+  if (!Array.isArray(results)) results = [results];
+
+  results.forEach(r => {
+    if (!r) return;
+    // Apply pipe filter
+    let text = r.text;
+    if (pipeArgs.length && pipeArgs[0] === 'grep') {
+      const pat = pipeArgs[1]?.replace(/^['"]|['"]$/g,'') || '';
+      text = text.split('\n').filter(l => l.toLowerCase().includes(pat.toLowerCase())).join('\n');
+      if (!text) text = '(no grep matches)';
+    }
+    const p = document.createElement('div');
+    p.className = `out-line out-${r.type}`;
+    p.textContent = text;
+    el.appendChild(p);
+  });
+  scrollTerm();
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Input handler
+document.getElementById('terminal-input').addEventListener('keydown', e => {
+  const input = e.target;
+  if (e.key === 'Enter') {
+    runCommand(input.value);
+    input.value = '';
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (histIdx > 0) { histIdx--; input.value = termHistory[histIdx] || ''; }
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (histIdx < termHistory.length - 1) { histIdx++; input.value = termHistory[histIdx] || ''; }
+    else { histIdx = termHistory.length; input.value = ''; }
+  } else if (e.key === 'Tab') {
+    e.preventDefault();
+    const val = input.value;
+    const parts = val.split(' ');
+    const last = parts[parts.length - 1];
+    const match = Object.keys(COMMANDS).find(c => c.startsWith(last));
+    if (match) { parts[parts.length-1] = match; input.value = parts.join(' '); }
+  }
+});
+
+// Focus terminal on click
+document.getElementById('terminal-output').addEventListener('click', () => {
+  document.getElementById('terminal-input').focus();
+});
+
+// ── Sidebar command list ──
+const CMD_CATEGORIES = [
+  { label: 'SYSTEM INFO', tag: 'safe', color: '#00ff88', cmds: [
+    { cmd: 'uname -a', desc: 'Full system info' },
+    { cmd: 'lsb_release -a', desc: 'OS version' },
+    { cmd: 'whoami', desc: 'Current user' },
+    { cmd: 'id', desc: 'User ID & groups' },
+    { cmd: 'uptime', desc: 'System uptime' },
+    { cmd: 'hostname', desc: 'Machine name' },
+    { cmd: 'top', desc: 'Live processes' },
+    { cmd: 'df -h', desc: 'Disk space' },
+    { cmd: 'free -h', desc: 'RAM usage' },
+    { cmd: 'who', desc: 'Logged in users' },
+    { cmd: 'w', desc: 'Users + activity' },
+    { cmd: 'last', desc: 'Login history' },
+    { cmd: 'man nmap', desc: 'Manual pages' },
+  ]},
+  { label: 'APT PACKAGES', tag: 'root', color: '#ff4757', cmds: [
+    { cmd: 'sudo apt update', desc: 'Refresh package index' },
+    { cmd: 'sudo apt upgrade', desc: 'Upgrade packages' },
+    { cmd: 'sudo apt full-upgrade', desc: 'Full system upgrade' },
+    { cmd: 'apt search nmap', desc: 'Search packages' },
+    { cmd: 'apt show john', desc: 'Package details' },
+    { cmd: 'sudo apt install net-tools', desc: 'Install package' },
+    { cmd: 'sudo apt remove net-tools', desc: 'Remove package' },
+    { cmd: 'sudo apt purge net-tools', desc: 'Purge + config' },
+    { cmd: 'sudo apt autoremove', desc: 'Remove orphans' },
+    { cmd: 'apt list --installed', desc: 'List installed' },
+  ]},
+  { label: 'NAVIGATION', tag: 'safe', color: '#00ff88', cmds: [
+    { cmd: 'pwd', desc: 'Print directory' },
+    { cmd: 'cd ~/Desktop', desc: 'Change directory' },
+    { cmd: 'cd ..', desc: 'Go up one level' },
+    { cmd: 'cd /', desc: 'Go to root' },
+    { cmd: 'ls -lh', desc: 'List with sizes' },
+    { cmd: 'ls -la', desc: 'Show hidden files' },
+    { cmd: 'tree ~', desc: 'Visual tree' },
+    { cmd: 'echo $PATH', desc: 'Print PATH variable' },
+  ]},
+  { label: 'FILE OPERATIONS', tag: 'safe', color: '#00ff88', cmds: [
+    { cmd: 'touch a.txt', desc: 'Create file' },
+    { cmd: 'cat a.txt', desc: 'View file' },
+    { cmd: 'cat /etc/passwd', desc: 'View passwd' },
+    { cmd: 'head -n 5 /etc/passwd', desc: 'First 5 lines' },
+    { cmd: 'tail -f /var/log/auth.log', desc: 'Live log watch' },
+    { cmd: 'grep root /etc/passwd', desc: 'Search file' },
+    { cmd: 'grep -n root /etc/passwd', desc: 'Search + line nums' },
+    { cmd: 'cp a.txt b.txt', desc: 'Copy file' },
+    { cmd: 'mv a.txt Desktop', desc: 'Move file' },
+    { cmd: 'mkdir -p dir1/dir2', desc: 'Create nested dir' },
+    { cmd: 'chmod u+x script.sh', desc: 'Make executable' },
+    { cmd: 'stat a.txt', desc: 'File details' },
+    { cmd: 'file a.txt', desc: 'Detect file type' },
+  ]},
+  { label: 'FILE SEARCHING', tag: 'safe', color: '#00ff88', cmds: [
+    { cmd: 'find /etc -name passwd', desc: 'Find by name' },
+    { cmd: 'find ~ -type f -name "*.txt"', desc: 'Find text files' },
+    { cmd: 'find /var/log -mtime -2', desc: 'Modified 2 days' },
+    { cmd: 'sudo updatedb', desc: 'Rebuild locate DB' },
+    { cmd: 'locate nginx.conf', desc: 'Fast file search' },
+    { cmd: 'which nmap', desc: 'Find executable' },
+  ]},
+  { label: 'NETWORKING', tag: 'net', color: '#00d4ff', cmds: [
+    { cmd: 'ip a', desc: 'IP addresses' },
+    { cmd: 'ifconfig', desc: 'Network config' },
+    { cmd: 'ping -c 4 google.com', desc: 'Test connectivity' },
+    { cmd: 'traceroute google.com', desc: 'Route mapping' },
+    { cmd: 'ss -tuln', desc: 'Open ports' },
+    { cmd: 'ss -s', desc: 'Socket summary' },
+    { cmd: 'dig google.com', desc: 'DNS lookup' },
+    { cmd: 'wget https://example.com/file.zip', desc: 'Download file' },
+    { cmd: 'curl -I https://google.com', desc: 'HTTP headers' },
+    { cmd: 'nmcli dev status', desc: 'Network devices' },
+    { cmd: 'nmcli con show', desc: 'Saved networks' },
+  ]},
+  { label: 'USER MANAGEMENT', tag: 'root', color: '#ff4757', cmds: [
+    { cmd: 'sudo adduser user1', desc: 'Create user' },
+    { cmd: 'sudo passwd user1', desc: 'Set password' },
+    { cmd: 'sudo usermod -G sudo user1', desc: 'Add to sudo' },
+    { cmd: 'sudo usermod -L user1', desc: 'Lock account' },
+    { cmd: 'sudo usermod -U user1', desc: 'Unlock account' },
+    { cmd: 'sudo groupadd pentesters', desc: 'Create group' },
+    { cmd: 'sudo userdel -r user1', desc: 'Delete user' },
+    { cmd: 'getent group', desc: 'List all groups' },
+    { cmd: 'sudo cat /etc/shadow', desc: 'Password hashes' },
+  ]},
+  { label: 'PORT SCANNING', tag: 'root', color: '#a855f7', cmds: [
+    { cmd: 'nmap -sT 192.168.1.1', desc: 'TCP Connect scan' },
+    { cmd: 'sudo nmap -sS 192.168.1.1', desc: 'SYN Stealth scan' },
+    { cmd: 'sudo nmap -sN 192.168.1.1', desc: 'NULL scan' },
+    { cmd: 'sudo nmap -sA 192.168.1.1', desc: 'ACK scan' },
+    { cmd: 'sudo nmap -sP 192.168.1.0/24', desc: 'Ping scan' },
+    { cmd: 'sudo nmap -sO 192.168.1.1', desc: 'IP Protocol scan' },
+    { cmd: 'sudo nmap -sX 192.168.1.1', desc: 'XMAS scan' },
+    { cmd: 'sudo nmap -sV 192.168.1.1', desc: 'Version detect' },
+  ]},
+  { label: 'VULNERABILITY SCANNING', tag: 'root', color: '#ff4757', cmds: [
+    { cmd: 'nmap --script vuln 192.168.1.5', desc: 'NSE vuln scan' },
+    { cmd: 'sudo nmap -sV --script vulners 192.168.1.5', desc: 'CVE lookup' },
+    { cmd: 'nmap -p 443 --script ssl-heartbleed 192.168.1.5', desc: 'Heartbleed test' },
+    { cmd: 'nikto -h 192.168.1.5', desc: 'Web server audit' },
+    { cmd: 'sqlmap -u "http://site.com/page?id=1"', desc: 'SQL injection' },
+    { cmd: 'searchsploit apache 2.4', desc: 'Exploit search' },
+    { cmd: 'msfconsole', desc: 'Metasploit' },
+  ]},
+];
+
+function buildSidebar() {
+  const list = document.getElementById('cmd-list');
+  list.innerHTML = '';
+  CMD_CATEGORIES.forEach(cat => {
+    const label = document.createElement('div');
+    label.className = 'cmd-category-label';
+    label.textContent = cat.label;
+    list.appendChild(label);
+    cat.cmds.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'cmd-item';
+      item.innerHTML = `<span class="cmd-name">${c.cmd.split(' ')[0]}</span><span class="cmd-desc">${c.desc}</span><span class="cmd-tag tag-${cat.tag}">${cat.tag}</span>`;
+      item.dataset.cmd = c.cmd;
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.cmd-item').forEach(i=>i.classList.remove('selected'));
+        item.classList.add('selected');
+        const input = document.getElementById('terminal-input');
+        input.value = c.cmd;
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      });
+      item.addEventListener('dblclick', () => {
+        runCommand(c.cmd);
+        document.getElementById('terminal-input').value = '';
+      });
+      list.appendChild(item);
+    });
+  });
+}
+
+function filterCmds(q) {
+  const items = document.querySelectorAll('.cmd-item');
+  const labels = document.querySelectorAll('.cmd-category-label');
+  q = q.toLowerCase();
+  items.forEach(item => {
+    item.style.display = !q || item.dataset.cmd.includes(q) || item.querySelector('.cmd-desc').textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+  labels.forEach(l => l.style.display = !q ? '' : 'none');
+}
+
+// Boot message
+function bootTerminal() {
+  const lines = [
+    { t:'info',    s:'                                                    ' },
+    { t:'header',  s:'  ██╗  ██╗ █████╗ ██╗      ██╗    ██╗   ██╗███╗   ██╗██╗   ██╗  ' },
+    { t:'header',  s:'  ██║ ██╔╝██╔══██╗██║      ██║    ██║   ██║████╗  ██║╚██╗ ██╔╝  ' },
+    { t:'header',  s:'  █████╔╝ ███████║██║      ██║    ██║   ██║██╔██╗ ██║ ╚████╔╝   ' },
+    { t:'header',  s:'  ██╔═██╗ ██╔══██║██║      ██║    ██║   ██║██║╚██╗██║  ╚██╔╝    ' },
+    { t:'header',  s:'  ██║  ██╗██║  ██║███████╗ ██║    ╚██████╔╝██║ ╚████║   ██║     ' },
+    { t:'sep',     s:'  ═══════════════════════════════════════════════════════════════' },
+    { t:'success', s:'  CYB 212 · Ethical Hacking Fundamentals · University of Uyo     ' },
+    { t:'cyan',    s:'  Interactive Kali Linux Terminal Simulator · Exam Edition       ' },
+    { t:'sep',     s:'  ═══════════════════════════════════════════════════════════════' },
+    { t:'result',  s:'' },
+    { t:'result',  s:'  Type  help  for a full command list' },
+    { t:'result',  s:'  Click any command on the left sidebar to load it' },
+    { t:'result',  s:'  Double-click a command in the sidebar to run it immediately' },
+    { t:'warn',    s:'  ⚡  Exam is next Friday — practice every command!' },
+    { t:'result',  s:'' },
+  ];
+  const el = document.getElementById('terminal-output');
+  lines.forEach(l => {
+    const p = document.createElement('div');
+    p.className = `out-line out-${l.t}`;
+    p.textContent = l.s;
+    el.appendChild(p);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THEORY DATA (from lecture notes)
+// ═══════════════════════════════════════════════════════════════════════════
+const THEORY_CARDS = [
+  {
+    title: "ETHICAL HACKING FUNDAMENTALS",
+    icon: "🎯",
+    color: "#00ff88",
+    bg: "rgba(0,255,136,0.1)",
+    intro: "The practice of attempting to penetrate a computer system or organisation network legally and ethically to find vulnerabilities that malicious attackers (Black Hat hackers) may exploit.",
+    points: [
+      "White Hat hackers simulate real-world attacks in a controlled environment",
+      "Helps organisations strengthen defences before a real breach occurs",
+      "Findings include vulnerabilities, how they were exploited, and fixes",
+    ],
+    extra: null
+  },
+  {
+    title: "KEY PRINCIPLES OF ETHICAL HACKING",
+    icon: "📜",
+    color: "#00d4ff",
+    bg: "rgba(0,212,255,0.1)",
+    intro: "Ethical hackers follow a strict code of conduct:",
+    points: [
+      "1. Legality & Authorisation — Must obtain exclusive written permission from the system owner",
+      "2. Define the Scope — Clearly define what systems can/cannot be tested and methods to use",
+      "3. No Harm — Identify and demonstrate vulnerabilities without causing damage or stealing data",
+      "4. Confidentiality & Reporting — Keep all findings confidential, share only with the organisation",
+    ],
+    extra: null
+  },
+  {
+    title: "INFORMATION SECURITY (CIA TRIAD)",
+    icon: "🔐",
+    color: "#a855f7",
+    bg: "rgba(168,85,247,0.1)",
+    intro: "Computers are physically and digitally protected for three core reasons:",
+    points: [
+      "Confidentiality — Prevent unauthorised access to information (BLP model: L(S) ≥ L(O) to read)",
+      "Integrity — Prevent unauthorised modification of files (Biba model: L(S) ≤ L(O) to write)",
+      "Availability — Ensure systems are operational. A = MTTF / (MTTF + MTTR)",
+    ],
+    extra: {
+      headers: ['Principle', 'Algorithm', 'Formula'],
+      rows: [
+        ['Confidentiality', 'BLP Model + Encryption', 'S can Read O if L(S) ≥ L(O)'],
+        ['Integrity', 'Biba Model + Hashing', 'S can Write O if L(S) ≤ L(O)'],
+        ['Availability', 'Reliability Engineering', 'A = MTTF / (MTTF + MTTR)'],
+      ]
+    }
+  },
+  {
+    title: "ENCRYPTION ALGORITHMS",
+    icon: "🔑",
+    color: "#ffd700",
+    bg: "rgba(255,215,0,0.08)",
+    intro: "The foundational algorithm for confidentiality. Converts plaintext (P) to ciphertext (C) using a key (K).",
+    points: [
+      "Symmetric: Uses ONE secret key for both encryption and decryption. Ek(P) = C, Dk(C) = P. Examples: AES, DES, 3DES, ChaCha20",
+      "Asymmetric: Uses TWO keys — public (shared) and private (secret). E_pub(P) = C, D_priv(C) = P. Examples: RSA, ECC",
+      "Hashing: One-way fixed-size digest H(M) = H. A one-bit change in M gives a completely different H. Used for integrity",
+    ],
+    extra: {
+      headers: ['Type', 'Keys', 'Examples', 'Formula'],
+      rows: [
+        ['Symmetric', '1 shared key', 'AES, DES, 3DES', 'Ek(P)=C, Dk(C)=P'],
+        ['Asymmetric', 'Public + Private', 'RSA, ECC', 'Epub(P)=C, Dpriv(C)=P'],
+        ['Hashing', 'None (one-way)', 'SHA-256, MD5', 'H(M)=H (irreversible)'],
+      ]
+    }
+  },
+  {
+    title: "SOCIAL ENGINEERING",
+    icon: "🎭",
+    color: "#ff4757",
+    bg: "rgba(255,71,87,0.1)",
+    intro: "An umbrella threat done by cyber criminals. Does NOT involve technical hacking techniques — exploits human psychology instead.",
+    points: [
+      "Phishing — Deceptive emails/messages to steal credentials",
+      "Vishing — Voice/phone call phishing",
+      "Smishing — SMS phishing",
+      "Baiting — Using tempting drives or items to trick victims",
+      "Tailgating — Following someone into a secure area",
+      "Pretexting — Creating a false identity or information",
+      "Scareware — Scaring users into downloading malware",
+    ],
+    extra: null
+  },
+  {
+    title: "COUNTERMEASURES — SOCIAL ENGINEERING",
+    icon: "🛡",
+    color: "#00d4ff",
+    bg: "rgba(0,212,255,0.1)",
+    intro: "Prevention against social engineering attacks:",
+    points: [
+      "Avoid opening emails and attachments from suspicious sources",
+      "Enable Multi-Factor Authentication (MFA)",
+      "Enable biometric authentication",
+      "Beware of tempting bait — avoid clicking unknown links",
+      "Security awareness training for all staff",
+      "Strict access control and verification protocols",
+    ],
+    extra: null
+  },
+  {
+    title: "MOBILE THREATS & ATTACKS",
+    icon: "📱",
+    color: "#ffa502",
+    bg: "rgba(255,165,2,0.08)",
+    intro: "Mobile wireless attacks and countermeasures:",
+    points: [
+      "Mobile Malware — Virus, Worms, Trojans, Ransomware, Spyware targeting mobile devices",
+      "Mobile Spyware — Monitors and collects data from devices without user consent (privacy violation, unauthorised surveillance)",
+      "Rooting (Android) / Jailbreaking (iOS) — Removes manufacturer software restrictions → increased vulnerability, data loss, void warranty",
+      "SMS/Voice Attack — Phishing schemes via messages/calls (Smishing, Vishing, SIM Swapping)",
+    ],
+    extra: null
+  },
+  {
+    title: "WEB APPLICATION ATTACKS",
+    icon: "🌐",
+    color: "#a855f7",
+    bg: "rgba(168,85,247,0.1)",
+    intro: "Web Application Attacks and Countermeasures:",
+    points: [
+      "SQL Injection — Inserts malicious SQL into queries. Countermeasures: Input validation, parameterised queries, stored procedures, WAF",
+      "Cross-Site Scripting (XSS) — Injects malicious scripts into web pages. Impact: session hijacking, data theft. Fix: CSP, HTTPOnly cookies, input sanitisation",
+      "CSRF — Tricks authenticated users into executing unwanted actions. Fix: CSRF tokens, SameSite cookies, user confirmation",
+      "Broken Authentication — Allows attackers to compromise accounts. Fix: Strong passwords, MFA, auto-logout",
+      "Insecure Deserialisation — Untrusted data deserialised → code execution. Fix: Data validation, integrity checks",
+    ],
+    extra: null
+  },
+  {
+    title: "MOBILE DEVICE MANAGEMENT (MDM)",
+    icon: "⚙",
+    color: "#00ff88",
+    bg: "rgba(0,255,136,0.08)",
+    intro: "Software solutions enabling administration, monitoring, and security of mobile devices within an organisation.",
+    points: [
+      "Device Policy Enforcement — Create enforced policies regarding device use and application installation",
+      "Remote Wipe — Implement features that allow wiping data in case of theft",
+      "Application Management — Control which apps can be installed",
+      "Data Encryption — Encrypt all data at rest and in transit",
+      "Regular Audit — Monitor device compliance regularly",
+    ],
+    extra: null
+  },
+];
+
+function buildTheory() {
+  const grid = document.getElementById('theory-grid');
+  THEORY_CARDS.forEach((card, i) => {
+    const el = document.createElement('div');
+    el.className = 'theory-card';
+    const extraHTML = card.extra ? `
+      <button class="expand-btn" onclick="toggleExpand(${i})">▸ VIEW TABLE</button>
+      <div class="card-expanded" id="theory-extra-${i}">
+        <table>
+          <tr>${card.extra.headers.map(h=>`<th>${h}</th>`).join('')}</tr>
+          ${card.extra.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}
+        </table>
+      </div>` : '';
+    el.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon" style="background:${card.bg}">${card.icon}</div>
+        <div class="card-title" style="color:${card.color}">${card.title}</div>
+      </div>
+      <div class="card-body">
+        <p>${card.intro}</p>
+        <ul class="card-points">
+          ${card.points.map(p=>`<li>${p}</li>`).join('')}
+        </ul>
+      </div>
+      ${extraHTML}`;
+    grid.appendChild(el);
+  });
+}
+
+function toggleExpand(i) {
+  const el = document.getElementById(`theory-extra-${i}`);
+  const btn = el.previousElementSibling;
+  const open = el.classList.toggle('open');
+  btn.textContent = open ? '▼ HIDE TABLE' : '▸ VIEW TABLE';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASES
+// ═══════════════════════════════════════════════════════════════════════════
+const PHASES = [
+  { n:'1', name:'RECONNAISSANCE (Information Gathering)', color:'#00ff88', desc:'Collecting as much information as possible about the target system or network. Includes both passive (OSINT, social media like LinkedIn, X, Facebook) and active reconnaissance.', tools:['Google Dorking','OSINT','theHarvester','Maltego','LinkedIn','Shodan'], type:'Passive' },
+  { n:'2', name:'SCANNING', color:'#00d4ff', desc:'Actively probing the target to discover open ports, running services, operating system versions, and network topology.', tools:['Nmap','Nessus','OpenVAS','Masscan'], type:'Active' },
+  { n:'3', name:'PASSIVE RECONNAISSANCE', color:'#a855f7', desc:'Gathering information without directly interacting with the target. Cannot be detected by the target.', tools:['Whois','DNS lookup','OSINT','Social Media'], type:'Passive' },
+  { n:'4', name:'ACTIVE RECONNAISSANCE', color:'#ffd700', desc:'Directly probing the target to gather information. Detectable by the target and their security systems.', tools:['Ping','Traceroute','Port Scan','Banner Grab'], type:'Active' },
+  { n:'5', name:'GAINING ACCESS (Exploitation)', color:'#ffa502', desc:'Using discovered vulnerabilities to gain unauthorised access to systems. This is the actual exploitation phase.', tools:['Metasploit','SQLmap','Hydra','ExploitDB'], type:'Offensive' },
+  { n:'6', name:'MAINTAINING ACCESS', color:'#ff6b9d', desc:'Establishing persistent access to the compromised system using backdoors, rootkits, or scheduled tasks to return later.', tools:['Meterpreter','Netcat','Cron jobs','Rootkits'], type:'Persistence' },
+  { n:'7', name:'COVERING TRACKS (Clearing Logs)', color:'#ff4757', desc:'Removing evidence of the attack from system logs, audit trails, and file access timestamps to avoid detection.', tools:['Log clearing','Timestomping','Anti-forensics','shred'], type:'Evasion' },
+];
+
+function buildPhases() {
+  const cont = document.getElementById('phases-content');
+  const titleEl = document.createElement('div');
+  titleEl.innerHTML = `<div class="phases-title">7 PHASES OF ETHICAL HACKING</div><div class="phases-sub">Memorise this sequence — it appears in every exam. Each phase builds on the previous.</div>`;
+  cont.appendChild(titleEl);
+
+  const flow = document.createElement('div');
+  flow.className = 'phases-flow';
+
+  PHASES.forEach((ph, i) => {
+    const item = document.createElement('div');
+    item.className = 'phase-item';
+    item.innerHTML = `
+      <div class="phase-line">
+        <div class="phase-circle" style="background:${ph.color}22; border-color:${ph.color}; color:${ph.color}">${ph.n}</div>
+        ${i < PHASES.length-1 ? `<div class="phase-connector"></div>` : ''}
+      </div>
+      <div class="phase-content">
+        <div class="phase-name" style="color:${ph.color}">${ph.name}</div>
+        <div class="phase-desc">${ph.desc}</div>
+        <div class="phase-tools">
+          ${ph.tools.map(t=>`<span class="phase-tool">${t}</span>`).join('')}
+          <span class="tag t-${ph.type==='Passive'?'cyan':ph.type==='Evasion'?'red':ph.type==='Offensive'?'red':'orange'}">${ph.type}</span>
+        </div>
+      </div>`;
+    flow.appendChild(item);
+  });
+  cont.appendChild(flow);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHEAT SHEET
+// ═══════════════════════════════════════════════════════════════════════════
+const CS_SECTIONS = [
+  { title:'SYSTEM COMMANDS', icon:'⚙', color:'#00ff88', bg:'rgba(0,255,136,0.1)', rows:[
+    ['uname -a', 'Full system/kernel info'],['lsb_release -a','OS version & codename'],
+    ['whoami','Current username'],['id','UID, GID, groups'],['uptime','System uptime + load'],
+    ['hostname','Machine network name'],['top','Live process viewer'],['df -h','Disk usage (human-readable)'],
+    ['free -h','RAM and swap usage'],['who','Currently logged in'],['last','Login history'],
+    ['man nmap','Open manual for nmap'],
+  ]},
+  { title:'APT PACKAGE MANAGER', icon:'📦', color:'#ffa502', bg:'rgba(255,165,2,0.08)', rows:[
+    ['sudo apt update','Refresh package index'],['sudo apt upgrade','Upgrade installed packages'],
+    ['sudo apt full-upgrade','Full upgrade (resolves deps)'],['apt search <n>','Search for package'],
+    ['apt show <n>','Package details'],['sudo apt install <n>','Install package'],
+    ['sudo apt remove <n>','Remove (keep config)'],['sudo apt purge <n>','Remove + delete config'],
+    ['sudo apt autoremove','Remove orphaned packages'],['apt list --installed','List all installed'],
+  ]},
+  { title:'FILE MANAGEMENT', icon:'📁', color:'#00d4ff', bg:'rgba(0,212,255,0.08)', rows:[
+    ['pwd','Print working directory'],['cd ~/Desktop','Change to Desktop'],['cd ..','Go one level up'],
+    ['ls -lh','Long list, human sizes'],['ls -la','Show hidden files'],['tree ~','Visual directory tree'],
+    ['touch file.txt','Create empty file'],['cat file.txt','View file contents'],
+    ['head -n 10 file','First 10 lines'],['tail -f /var/log/auth.log','Live log monitoring'],
+    ['grep "word" file','Search for pattern'],['grep -n "word" file','Search + line numbers'],
+    ['grep -v "word" file','Invert match'],['cp src dest','Copy file'],
+    ['mv src dest','Move/rename file'],['rm -rf dir/','Delete folder (CAUTION!)'],
+    ['chmod u+x script','Make executable'],['stat file.txt','File metadata'],
+  ]},
+  { title:'FILE SEARCHING', icon:'🔍', color:'#a855f7', bg:'rgba(168,85,247,0.08)', rows:[
+    ['find /etc -name passwd','Find file by exact name'],['find ~ -type f -name "*.pdf"','Find PDFs in home'],
+    ['find /var/log -mtime -2','Files modified in 2 days'],['sudo updatedb','Rebuild locate database'],
+    ['locate nginx.conf','Fast database search'],['which nmap','Find executable path'],
+  ]},
+  { title:'NETWORKING', icon:'🌐', color:'#00d4ff', bg:'rgba(0,212,255,0.08)', rows:[
+    ['ip a','Show all IP addresses'],['ifconfig eth0','Show eth0 config (legacy)'],
+    ['ping -c 4 google.com','Test connectivity (4 packets)'],['traceroute google.com','Map network hops'],
+    ['ss -tuln','Open TCP/UDP ports'],['ss -s','Socket statistics summary'],
+    ['dig google.com','DNS lookup'],['wget https://url/file','Download file'],
+    ['curl -I https://site','HTTP headers only'],['nmcli dev status','Network device states'],
+  ]},
+  { title:'USER MANAGEMENT', icon:'👤', color:'#ff6b9d', bg:'rgba(255,107,157,0.08)', rows:[
+    ['sudo adduser name','Create user (interactive)'],['sudo useradd -m -s /bin/bash name','Create user (scripted)'],
+    ['sudo passwd name','Set user password'],['sudo userdel -r name','Delete user + home dir'],
+    ['sudo groupadd name','Create group'],['sudo usermod -G sudo name','Add user to sudo'],
+    ['sudo usermod -L name','Lock user account'],['sudo usermod -U name','Unlock user account'],
+    ['su - username','Switch to user'],['cat /etc/passwd','View all user accounts'],
+    ['sudo cat /etc/shadow','View password hashes (root only)'],
+  ]},
+  { title:'NMAP PORT SCANNING', icon:'🔭', color:'#a855f7', bg:'rgba(168,85,247,0.08)', rows:[
+    ['nmap -sT <ip>','TCP Connect (no root, logged)'],['sudo nmap -sS <ip>','SYN Stealth (root, stealthy)'],
+    ['sudo nmap -sN <ip>','NULL scan (evades firewalls)'],['sudo nmap -sA <ip>','ACK (map firewall rules)'],
+    ['sudo nmap -sP <range>','Ping scan (host discovery)'],['sudo nmap -sO <ip>','IP Protocol scan'],
+    ['sudo nmap -sX <ip>','XMAS scan (FIN+PSH+URG)'],['sudo nmap -sV <ip>','Version detection'],
+    ['sudo nmap -sS -p- <ip>','Scan ALL 65535 ports'],['nmap -oN out.txt <ip>','Save results to file'],
+  ]},
+  { title:'VULNERABILITY SCANNING', icon:'🐛', color:'#ff4757', bg:'rgba(255,71,87,0.08)', rows:[
+    ['nmap --script vuln <ip>','NSE vulnerability sweep'],['sudo nmap -sV --script vulners <ip>','Version + CVE lookup'],
+    ['nmap -p 443 --script ssl-heartbleed <ip>','Check Heartbleed'],['nikto -h <url>','Web server audit'],
+    ['sqlmap -u "<url?param=1>"','SQL injection test'],['searchsploit apache 2.4','Search offline Exploit-DB'],
+    ['msfconsole','Launch Metasploit framework'],
+  ]},
+];
+
+function buildCheatSheet() {
+  const grid = document.getElementById('cs-grid');
+  CS_SECTIONS.forEach(sec => {
+    const card = document.createElement('div');
+    card.className = 'cs-card';
+    card.innerHTML = `<div class="cs-card-header" style="background:${sec.bg};color:${sec.color}">${sec.icon} ${sec.title}</div>`;
+    sec.rows.forEach(([cmd, desc]) => {
+      const row = document.createElement('div');
+      row.className = 'cs-row';
+      row.innerHTML = `<span class="cs-cmd">${cmd}</span><span class="cs-desc">${desc}</span><span class="cs-copy">⎘</span>`;
+      row.addEventListener('click', () => copyToClip(cmd));
+      card.appendChild(row);
+    });
+    grid.appendChild(card);
+  });
+}
+
+function copyToClip(text) {
+  navigator.clipboard.writeText(text).catch(() => {});
+  const t = document.getElementById('toast');
+  t.textContent = `Copied: ${text}`;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+  // Also put in terminal input
+  document.getElementById('terminal-input').value = text;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════════════════════════
+const QUIZ_QUESTIONS = [
+  { q:'What does "Ethical Hacking" involve?', opts:['Illegally accessing systems for profit','Legally and ethically finding vulnerabilities before malicious hackers exploit them','Selling vulnerabilities to cybercriminals','Physically breaking into server rooms'], a:1, exp:'Ethical hacking (white-hat) involves legally and ethically simulating attacks to find vulnerabilities so organisations can fix them before real attacks occur.' },
+  { q:'What is the FIRST step in ethical hacking according to the key principles?', opts:['Define the scope of testing','Obtain exclusive written authorisation from the system owner','Start scanning for open ports','Write the final report'], a:1, exp:'Legality and Authorisation is Principle #1. You MUST have written permission before performing any security assessment. Without it, it is a crime.' },
+  { q:'Which Nmap scan is considered the most stealthy because it never completes the TCP handshake?', opts:['nmap -sT (TCP Connect)','nmap -sV (Version)','sudo nmap -sS (SYN Stealth)','nmap -sP (Ping)'], a:2, exp:'The SYN Stealth scan (-sS) sends a SYN but immediately sends RST, never completing the connection. Many application logs never record it. Requires root/sudo.' },
+  { q:'What is the formula for Availability (A) in the CIA Triad?', opts:['A = MTTR / MTTF','A = MTTF + MTTR','A = MTTF / (MTTF + MTTR)','A = (MTTF - MTTR) / MTTF'], a:2, exp:'Availability A = MTTF / (MTTF + MTTR). MTTF = Mean Time To Failure. MTTR = Mean Time To Repair (how long to fix when broken).' },
+  { q:'In the BLP security model for CONFIDENTIALITY, when can subject S read object O?', opts:['When L(S) ≤ L(O)','When L(S) ≥ L(O)','When L(S) = 0','When L(O) = L(S) + 1'], a:1, exp:'BLP Simple Security Rule: S can Read O if L(S) ≥ L(O). Your security clearance must be EQUAL TO OR HIGHER than the file\'s classification level.' },
+  { q:'What type of social engineering involves creating a false identity to manipulate victims?', opts:['Baiting','Tailgating','Pretexting','Scareware'], a:2, exp:'Pretexting involves creating a false identity or fabricated scenario (pretext) to manipulate victims into revealing sensitive information or taking actions.' },
+  { q:'Which command shows ALL open listening TCP and UDP ports on your system?', opts:['netstat','ip a','ss -tuln','ifconfig'], a:2, exp:'ss -tuln: t=TCP, u=UDP, l=listening only, n=numeric addresses. This is the modern replacement for the older netstat command.' },
+  { q:'What is the difference between "sudo apt remove" and "sudo apt purge"?', opts:['They are identical','remove keeps config files, purge removes everything including config files','purge keeps config files, remove deletes them','remove requires root, purge does not'], a:1, exp:'apt remove uninstalls the package but leaves configuration files behind. apt purge completely wipes the package AND all its configuration files — a full clean removal.' },
+  { q:'Which Nmap scan type sends packets with NO flags set (technically malformed)?', opts:['-sS (SYN Stealth)','-sN (NULL Scan)','-sA (ACK Scan)','-sX (XMAS Scan)'], a:1, exp:'The NULL scan (-sN) intentionally sends packets with zero flags set. Open Linux/Unix ports ignore it; closed ports reply with RST. Does NOT work against Windows.' },
+  { q:'What does "traceroute google.com" do?', opts:['Downloads google.com to your machine','Tests if Google is online with one packet','Maps every router hop your data takes to reach Google, showing where connections may fail','Shows Google\'s open ports'], a:2, exp:'traceroute maps the complete network path from your machine to the destination. Each "hop" is a router your data passes through. * * * means a router is blocking ICMP.' },
+  { q:'In the 7 phases of ethical hacking, what phase comes after Gaining Access?', opts:['Covering Tracks','Scanning','Maintaining Access','Reconnaissance'], a:2, exp:'Phase 5 = Gaining Access (Exploitation). Phase 6 = Maintaining Access (establishing persistence). Phase 7 = Covering Tracks (clearing logs).' },
+  { q:'Which tool is used for automated SQL injection testing?', opts:['Nikto','SQLmap','Searchsploit','Msfconsole'], a:1, exp:'SQLmap is the automated SQL injection testing tool. You provide a URL with parameters and it automatically injects payloads to test if the database is vulnerable.' },
+  { q:'What does "chmod 600 id_rsa" mean for the file permissions?', opts:['Owner: read+write+execute, Group: none, Others: none','Owner: read+write, Group: none, Others: none','Owner: read only, Group: read only, Others: none','Full permissions for everyone'], a:1, exp:'Octal 600: Owner=6(rw), Group=0(none), Others=0(none). This is the required permission for SSH private key files. SSH refuses to use keys with weaker permissions.' },
+  { q:'What is the purpose of the Nmap ACK scan (-sA)?', opts:['Find all open ports on target','Determine OS version','Map firewall rules — shows which ports are filtered vs unfiltered','Scan UDP ports'], a:2, exp:'The ACK scan does NOT find open ports — it maps FIREWALL RULES. "unfiltered" = port is reachable (no firewall). "filtered" = firewall is blocking that port.' },
+  { q:'What does "tail -f /var/log/auth.log" do?', opts:['Shows the last 10 lines then exits','Searches auth.log for "tail"','Keeps the file open and streams new lines in REAL TIME — live log monitoring','Copies auth.log to a backup'], a:2, exp:'The -f flag means "follow". It keeps the file open and shows new lines as they are written — like watching a security camera live. Ctrl+C to stop.' },
+  { q:'Symmetric encryption uses how many keys?', opts:['Two — one public, one private','Three — encrypt, decrypt, and sign','One shared secret key for both encryption and decryption','Zero — it uses certificates'], a:2, exp:'Symmetric encryption uses ONE shared secret key for both encryption and decryption. Ek(P) = C and Dk(C) = P. Examples: AES, DES, 3DES, ChaCha20.' },
+  { q:'What is Rooting/Jailbreaking a mobile device?', opts:['Installing a new operating system','The practice of removing software restrictions imposed by the device manufacturer','Encrypting all data on the device','Enabling biometric authentication'], a:1, exp:'Rooting (Android) and Jailbreaking (iOS) remove software restrictions imposed by manufacturers. Impacts: increased vulnerability, data loss risk, and voided warranty.' },
+  { q:'Which command reveals the EXACT path of an installed executable like nmap?', opts:['find /nmap','locate nmap','which nmap','man nmap'], a:2, exp:'which shows the full path of executables in your PATH. Example: which nmap → /usr/bin/nmap. If it returns nothing, the tool is not installed or not in PATH.' },
+  { q:'What does the Nikto tool do?', opts:['Scans for open ports on a network','Performs SQL injection attacks','Audits web servers for misconfigurations, dangerous files, and outdated software','Maps network topology'], a:2, exp:'Nikto is a web server scanner. It checks for dangerous exposed files, outdated software versions, default credentials, dangerous HTTP methods, and misconfigurations.' },
+  { q:'In the Biba integrity model, when can subject S write to object O?', opts:['When L(S) ≥ L(O)','When L(S) ≤ L(O)','When L(S) = maximum','Always — write is unrestricted'], a:1, exp:'Biba Star (*) Integrity Property: S can Write O if and only if L(S) ≤ L(O). This prevents lower-integrity subjects from writing to higher-integrity objects (contaminating them).' },
+];
+
+let quizIdx = 0, quizScore = 0, answered = false;
+
+function buildQuiz() {
+  if (quizIdx >= QUIZ_QUESTIONS.length) {
+    document.getElementById('quiz-area').style.display = 'none';
+    const comp = document.getElementById('quiz-complete');
+    comp.classList.add('show');
+    const pct = Math.round((quizScore / QUIZ_QUESTIONS.length) * 100);
+    document.getElementById('qc-score').textContent = `${quizScore} / ${QUIZ_QUESTIONS.length} (${pct}%)`;
+    document.getElementById('qc-icon').textContent = pct >= 80 ? '🏆' : pct >= 60 ? '📚' : '💪';
+    document.getElementById('qc-msg').textContent = pct >= 80 ? 'Excellent! You are exam-ready!' : pct >= 60 ? 'Good progress — review the theory section for weak areas.' : 'Keep studying — use the theory and cheat sheet tabs to review.';
+    document.getElementById('quiz-score').textContent = `Final: ${quizScore} / ${QUIZ_QUESTIONS.length}`;
+    return;
+  }
+
+  answered = false;
+  const q = QUIZ_QUESTIONS[quizIdx];
+  const area = document.getElementById('quiz-area');
+  const fill = document.getElementById('quiz-progress-fill');
+  fill.style.width = `${(quizIdx / QUIZ_QUESTIONS.length) * 100}%`;
+  document.getElementById('quiz-score').textContent = `Score: ${quizScore} / ${quizIdx}`;
+
+  const letters = ['A','B','C','D'];
+  area.innerHTML = `
+    <div class="quiz-question-card">
+      <div class="q-number">QUESTION ${quizIdx + 1} OF ${QUIZ_QUESTIONS.length}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-options">
+        ${q.opts.map((opt,i) => `
+          <div class="q-option" onclick="answerQ(${i})" data-idx="${i}">
+            <div class="opt-letter">${letters[i]}</div>
+            <span>${opt}</span>
+          </div>`).join('')}
+      </div>
+      <div class="q-explanation" id="q-exp">${q.exp}</div>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn-quiz btn-reset" onclick="restartQuiz()">RESTART</button>
+      <button class="btn-quiz btn-next" id="btn-next" onclick="nextQ()" style="display:none">NEXT →</button>
+    </div>`;
+}
+
+function answerQ(idx) {
+  if (answered) return;
+  answered = true;
+  const q = QUIZ_QUESTIONS[quizIdx];
+  const opts = document.querySelectorAll('.q-option');
+  opts.forEach(o => o.classList.add('disabled'));
+  opts[idx].classList.add(idx === q.a ? 'correct' : 'wrong');
+  opts[q.a].classList.add('correct');
+  if (idx === q.a) quizScore++;
+  document.getElementById('q-exp').classList.add('show');
+  document.getElementById('btn-next').style.display = 'block';
+  document.getElementById('quiz-score').textContent = `Score: ${quizScore} / ${quizIdx + 1}`;
+}
+
+function nextQ() {
+  quizIdx++;
+  buildQuiz();
+}
+
+function restartQuiz() {
+  quizIdx = 0; quizScore = 0; answered = false;
+  document.getElementById('quiz-area').style.display = 'block';
+  document.getElementById('quiz-complete').classList.remove('show');
+  document.getElementById('quiz-progress-fill').style.width = '0%';
+  buildQuiz();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.main').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${id}`).classList.add('active');
+  document.querySelector(`[data-tab="${id}"]`).classList.add('active');
+  if (id === 'terminal') document.getElementById('terminal-input').focus();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+buildSidebar();
+bootTerminal();
+buildTheory();
+buildPhases();
+buildCheatSheet();
+buildQuiz();
+
+// Focus terminal input
+setTimeout(() => document.getElementById('terminal-input').focus(), 100);
+</script>
+</body>
+</html>
